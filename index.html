@@ -804,6 +804,36 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
 
 <script>window.VOICE_BASE="audio/";</script>
 <script>
+/* ============================================================
+   WHICH BUILD AM I?
+   A phone can sit on a cached copy of this game for weeks and the
+   child would never know. So the page asks the server which build
+   is current, and if it is holding an older one it throws away its
+   caches and reloads itself — once, guarded, never in a loop.
+   ============================================================ */
+const BUILD_ID='2026-09-09 05:07';
+(async function checkBuild(){
+  if(!location.protocol.startsWith('http')) return;   /* a local file has no server to ask */
+  try{
+    const r=await fetch('version.json?t='+Date.now(), {cache:'no-store'});
+    if(!r.ok) return;
+    const live=(await r.json()).build;
+    if(!live || live===BUILD_ID) return;
+    /* one reload per stale build, so a failed refresh can never spin */
+    const flag='zirat_reload_'+live;
+    if(sessionStorage.getItem(flag)) return;
+    sessionStorage.setItem(flag,'1');
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(x=>x.unregister()));
+    }
+    if(window.caches){
+      const keys=await caches.keys();
+      await Promise.all(keys.map(k=>caches.delete(k)));
+    }
+    location.reload();
+  }catch(e){}
+})();
 const ART = {"ghost": "art/ghost.webp", "reveal": "art/reveal.webp", "shards": "art/shards.webp", "coach": "art/coach.webp", "emblem": "art/emblem.webp", "hero": "art/hero.webp", "i2": "art/i2.webp", "i3": "art/i3.webp", "i4": "art/i4.webp", "i5": "art/i5.webp", "i6": "art/i6.webp", "i7": "art/i7.webp", "i8": "art/i8.webp", "i9": "art/i9.webp", "i10": "art/i10.webp", "champ": "art/champ.webp", "heroine": "art/heroine.webp"};
 const VCLIPS=[{"t":"לזה קוראים כפל כותבים אותו ככה שלוש כפול ארבע שווה שתים עשרה","f":"wh_name_m.mp3","g":"m","n":""},{"t":"תלחצי על חתיכה כדי לשים אותה בארגז ארבע חתיכות בכל ארגז","f":"wh_tap_f.mp3","g":"f","n":""},{"t":"תלחץ על חתיכה כדי לשים אותה בארגז ארבע חתיכות בכל ארגז","f":"wh_tap_m.mp3","g":"m","n":""},{"t":"עשרה לוחמים תפסו אותן כל אחד שומר על חתיכה אחת","f":"st_3_m.mp3","g":"m","n":""},{"t":"מהחתיכות בונים מגן בלי מגן הם יפילו אותך","f":"st_4_m.mp3","g":"m","n":""},{"t":"מהחתיכות בונים מגן בלי מגן הם יפילו אותך","f":"st_4_f.mp3","g":"f","n":""},{"t":"תחזירי את עשר החתיכות ותהיי האלופה הבאה","f":"st_5_f.mp3","g":"f","n":""},{"t":"תחזיר את עשר החתיכות ותהיה האלוף הבא","f":"st_5_m.mp3","g":"m","n":""},{"t":"הוא עוד עומד הכל נשמר אפשר לנסות שוב","f":"fg_lost_m.mp3","g":"m","n":""},{"t":"שלום אני מוריס ואני אסביר לך הכל לאט","f":"fg_hello_m.mp3","g":"m","n":""},{"t":"שלושת האגרופים מכה שלישית שלא רואים","f":"foe_2_m.mp3","g":"m","n":""},{"t":"שלושה ארגזים של ארבע זה שתים עשרה","f":"wh_rule_m.mp3","g":"m","n":""},{"t":"ארבע זרועות מכפיל ואז מכפיל שוב","f":"foe_4_m.mp3","g":"m","n":""},{"t":"ארגז מלא ארבע חתיכות עכשיו הבא","f":"wh_full_m.mp3","g":"m","n":""},{"t":"ספור איתי ארבע שמונה שתים עשרה","f":"wh_count_m.mp3","g":"m","n":""},{"t":"ספרי איתי ארבע שמונה שתים עשרה","f":"wh_count_f.mp3","g":"f","n":""},{"t":"לילה אחד היא נשברה לעשר חתיכות","f":"st_2_m.mp3","g":"m","n":""},{"t":"תשעת הזנבות תמיד אחד פחות מעשר","f":"foe_7_m.mp3","g":"m","n":""},{"t":"אני מוריס אימנתי פעם את האלוף","f":"wh_intro_m.mp3","g":"m","n":""},{"t":"ניצחת החזרת עוד חתיכה מהחגורה","f":"fg_won_m.mp3","g":"m","n":""},{"t":"ניצחת החזרת עוד חתיכה מהחגורה","f":"fg_won_f.mp3","g":"f","n":""},{"t":"שבע המסכות מחליף פנים בכל מכה","f":"foe_8_m.mp3","g":"m","n":""},{"t":"שש השרירים חמש מכות ועוד אחת","f":"foe_6_m.mp3","g":"m","n":""},{"t":"לאלוף הזירה הייתה חגורה אחת","f":"st_1_m.mp3","g":"m","n":""},{"t":"התאומים עושים כל דבר פעמיים","f":"foe_0_m.mp3","g":"m","n":""},{"t":"אני בונה אותו ואפשר להסתכל","f":"fg_watch_m.mp3","g":"m","n":""},{"t":"מכונת העשר סופרת רק בעשרות","f":"foe_1_m.mp3","g":"m","n":""},{"t":"שמונה הצללים מתפצל לשמונה","f":"foe_5_m.mp3","g":"m","n":""},{"t":"חטפת בואי נראה את זה יחד","f":"fg_hit_f.mp3","g":"f","n":""},{"t":"חטפת בוא נראה את זה יחד","f":"fg_hit_m.mp3","g":"m","n":""},{"t":"תעזור לי לסדר את המחסן","f":"wh_help_m.mp3","g":"m","n":""},{"t":"תעזרי לי לסדר את המחסן","f":"wh_help_f.mp3","g":"f","n":""},{"t":"יד הפלדה סופר בחמישיות","f":"foe_3_m.mp3","g":"m","n":""},{"t":"האלוף הוא יודע הכל","f":"foe_9_m.mp3","g":"m","n":""},{"t":"מי אתה בזירה תבחר","f":"fg_pick_m.mp3","g":"m","n":""},{"t":"מי את בזירה תבחרי","f":"fg_pick_f.mp3","g":"f","n":""},{"t":"סימנתי לך איפה","f":"fg_marked_m.mp3","g":"m","n":""},{"t":"נספור אותו יחד","f":"fg_countit.mp3","g":"x","n":""},{"t":"שלושים ושתיים","f":"num_32_x.mp3","g":"x","n":"32"},{"t":"ארבעים ושתיים","f":"num_42_x.mp3","g":"x","n":"42"},{"t":"ארבעים ושמונה","f":"num_48_x.mp3","g":"x","n":"48"},{"t":"עשרים ושמונה","f":"num_28_x.mp3","g":"x","n":"28"},{"t":"חמישים וארבע","f":"num_54_x.mp3","g":"x","n":"54"},{"t":"שבעים ושתיים","f":"num_72_x.mp3","g":"x","n":"72"},{"t":"תבנה מגן של","f":"fg_build_m.mp3","g":"m","n":""},{"t":"תבני מגן של","f":"fg_build_f.mp3","g":"f","n":""},{"t":"עוד פעם לאט","f":"fg_again_m.mp3","g":"m","n":""},{"t":"עשרים וארבע","f":"num_24_x.mp3","g":"x","n":"24"},{"t":"שלושים וחמש","f":"num_35_x.mp3","g":"x","n":"35"},{"t":"ארבעים וחמש","f":"num_45_x.mp3","g":"x","n":"45"},{"t":"ארבעים ותשע","f":"num_49_x.mp3","g":"x","n":"49"},{"t":"שישים ושלוש","f":"num_63_x.mp3","g":"x","n":"63"},{"t":"שישים וארבע","f":"num_64_x.mp3","g":"x","n":"64"},{"t":"שמונים ואחת","f":"num_81_x.mp3","g":"x","n":"81"},{"t":"כשאתה מוכן","f":"fg_ready_m.mp3","g":"m","n":""},{"t":"כשאת מוכנה","f":"fg_ready_f.mp3","g":"f","n":""},{"t":"שמונה עשרה","f":"num_18_x.mp3","g":"x","n":"18"},{"t":"עשרים ואחת","f":"num_21_x.mp3","g":"x","n":"21"},{"t":"עשרים וחמש","f":"num_25_x.mp3","g":"x","n":"25"},{"t":"עשרים ושבע","f":"num_27_x.mp3","g":"x","n":"27"},{"t":"שלושים ושש","f":"num_36_x.mp3","g":"x","n":"36"},{"t":"חמישים ושש","f":"num_56_x.mp3","g":"x","n":"56"},{"t":"תרגיל חדש","f":"fg_newfact_m.mp3","g":"m","n":""},{"t":"שתים עשרה","f":"num_12_x.mp3","g":"x","n":"12"},{"t":"ארבע עשרה","f":"num_14_x.mp3","g":"x","n":"14"},{"t":"קבוצה אחת","f":"fg_onegroup.mp3","g":"x","n":""},{"t":"שורות של","f":"fg_rows_m.mp3","g":"m","n":""},{"t":"חמש עשרה","f":"num_15_x.mp3","g":"x","n":"15"},{"t":"ביחד זה","f":"fg_split_m.mp3","g":"m","n":""},{"t":"שש עשרה","f":"num_16_x.mp3","g":"x","n":"16"},{"t":"חתיכות","f":"fg_pieces_m.mp3","g":"m","n":""},{"t":"שלושים","f":"num_30_x.mp3","g":"x","n":"30"},{"t":"ארבעים","f":"num_40_x.mp3","g":"x","n":"40"},{"t":"חמישים","f":"num_50_x.mp3","g":"x","n":"50"},{"t":"שמונים","f":"num_80_x.mp3","g":"x","n":"80"},{"t":"משבצות","f":"fg_squares.mp3","g":"x","n":""},{"t":"בדיוק","f":"fg_exact_m.mp3","g":"m","n":""},{"t":"שתיים","f":"num_2_x.mp3","g":"x","n":"2"},{"t":"שמונה","f":"num_8_x.mp3","g":"x","n":"8"},{"t":"עשרים","f":"num_20_x.mp3","g":"x","n":"20"},{"t":"שישים","f":"num_60_x.mp3","g":"x","n":"60"},{"t":"שבעים","f":"num_70_x.mp3","g":"x","n":"70"},{"t":"תשעים","f":"num_90_x.mp3","g":"x","n":"90"},{"t":"חסמת","f":"fg_blocked_m.mp3","g":"m","n":""},{"t":"חסמת","f":"fg_blocked_f.mp3","g":"f","n":""},{"t":"ועוד","f":"fg_plus_m.mp3","g":"m","n":""},{"t":"כפול","f":"fg_times_m.mp3","g":"m","n":""},{"t":"שווה","f":"fg_equals_m.mp3","g":"m","n":""},{"t":"שלוש","f":"num_3_x.mp3","g":"x","n":"3"},{"t":"ארבע","f":"num_4_x.mp3","g":"x","n":"4"},{"t":"תבנה","f":"fg_buildword_m.mp3","g":"m","n":""},{"t":"תבני","f":"fg_buildword_f.mp3","g":"f","n":""},{"t":"אחת","f":"num_1_x.mp3","g":"x","n":"1"},{"t":"חמש","f":"num_5_x.mp3","g":"x","n":"5"},{"t":"שבע","f":"num_7_x.mp3","g":"x","n":"7"},{"t":"תשע","f":"num_9_x.mp3","g":"x","n":"9"},{"t":"עשר","f":"num_10_x.mp3","g":"x","n":"10"},{"t":"מאה","f":"num_100_x.mp3","g":"x","n":"100"},{"t":"פעם","f":"fg_paam.mp3","g":"x","n":""},{"t":"שש","f":"num_6_x.mp3","g":"x","n":"6"},{"t":"זה","f":"fg_ze.mp3","g":"x","n":""}];
 
@@ -2134,6 +2164,8 @@ $('menuBtn').onclick=()=>{
       <div><b>לִרְאוֹת שׁוּב אֵיךְ מַתְחִילִים</b><small>הַמַּחְסָן וְהַסִּפּוּר מֵהַהַתְחָלָה</small></div></button>
     <button class="drow" id="mWho"><span class="di">&#9787;</span>
       <div><b>לְהַחְלִיף דְּמוּת אוֹ שֵׁם</b><small>${S.name} · ${S.g==='f'?'לוֹחֶמֶת':'לוֹחֵם'}</small></div></button>
+    <button class="drow" id="mVer"><span class="di">&#9432;</span>
+      <div><b>גִּרְסָה</b><small>${BUILD_ID}</small></div></button>
     <button class="drow" id="mReset"><span class="di">&#9888;</span>
       <div><b>לְאַפֵּס הַכֹּל וְלַחֲזֹר לַפְּתִיחַ</b><small>מוחק הכל ומתחיל מהמסך הראשון</small></div></button>
     <button class="btn ghost" id="mClose" style="margin-top:8px">סְגֹר</button>`;

@@ -41,6 +41,14 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
 
+  /* the build stamp is the one thing that must never come from a cache —
+     it is what tells a stale phone that it is stale */
+  if (req.url.indexOf('version.json') > -1) {
+    e.respondWith(fetch(req).catch(() => new Response('{}', {
+      headers: { 'Content-Type': 'application/json' } })));
+    return;
+  }
+
   /* the document: network first, so a fresh deploy is picked up on the
      next visit instead of being shadowed by the cache forever */
   if (req.mode === 'navigate') {
