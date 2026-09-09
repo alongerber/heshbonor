@@ -483,6 +483,30 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
 .objective b{color:var(--gold-hi);font-family:var(--f-num);direction:ltr;unicode-bidi:isolate}
 /* the slot is always in the layout, so the grid never resizes mid-turn */
 .readyslot{min-height:62px;display:flex;align-items:center;margin-top:9px}
+/* ---- charge meter ---- */
+.chargewrap{display:flex;align-items:center;gap:8px;padding:0 12px 5px}
+.chargewrap .clab{font-size:10.5px;letter-spacing:.09em;color:var(--faint);white-space:nowrap}
+.chargewrap .ctrack{flex:1;height:5px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.chargewrap .ctrack i{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,#1B4FD1,#F5B93B);transition:width .28s ease}
+.chargewrap.full .clab{color:var(--gold-hi);font-weight:800}
+.chargewrap.full .ctrack i{background:linear-gradient(90deg,#F5B93B,#FFD97A);
+  animation:chargepulse 1s ease-in-out infinite}
+@keyframes chargepulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.55)}}
+@keyframes lunge{0%{transform:none}35%{transform:translateX(-26%) scale(1.06)}100%{transform:none}}
+.f-me.lunge{animation:lunge .42s cubic-bezier(.2,.9,.3,1)}
+/* ---- which game this round is ---- */
+.roundtag{align-self:center;margin:0 auto 6px;font-size:11px;letter-spacing:.1em;
+  color:var(--blue-hi);border:1px solid rgba(27,79,209,.45);border-radius:999px;
+  padding:3px 11px;background:rgba(27,79,209,.1);width:max-content}
+.roundtag.rt-repair{color:var(--mint);border-color:rgba(61,220,132,.45);background:rgba(61,220,132,.09)}
+.roundtag.rt-missing{color:var(--gold-hi);border-color:rgba(245,185,59,.45);background:rgba(245,185,59,.09)}
+/* ---- the board a round hands you ---- */
+.cell.given{opacity:.55}
+.cell.hole{box-shadow:inset 0 0 0 2px rgba(245,185,59,.55);background:rgba(245,185,59,.07)}
+.cell.corridor{box-shadow:inset 0 0 0 1px rgba(245,185,59,.34)}
+.cell.rule{border-left:2px solid rgba(245,185,59,.6)}
+.cell.ruleRow{border-bottom:2px solid rgba(122,168,255,.55)}
 /* ---- what waits tomorrow ---- */
 .tomorrow{margin:14px 0 4px;padding:13px 14px;border-radius:14px;
   background:rgba(27,79,209,.11);border:1px solid rgba(27,79,209,.34);text-align:right}
@@ -749,6 +773,12 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
         <div class="track"><u id="ghMe"></u><i id="hpMe" style="width:100%"></i></div></div>
     </div>
 
+    <!-- the arcade layer: clean building charges it, nothing drains it -->
+    <div class="chargewrap" id="chargeWrap">
+      <span class="clab" id="chargeLab">מַד כּוֹחַ</span>
+      <div class="ctrack"><i id="chargeBar"></i></div>
+    </div>
+
     <div class="stage" id="stage">
       <img class="f-foe" id="figFoe" alt="">
       <img class="f-me"  id="figMe"  alt="">
@@ -769,6 +799,7 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
     </div>
 
     <div class="gridpane" id="gridPane">
+      <div class="roundtag" id="roundTag" hidden></div>
       <div class="objective" id="objective"></div>
       <div class="gridhead">
         <span class="want">הַמָּגֵן צָרִיךְ <b id="needN">0</b> חֲתִיכוֹת</span>
@@ -895,7 +926,7 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
    is current, and if it is holding an older one it throws away its
    caches and reloads itself — once, guarded, never in a loop.
    ============================================================ */
-const BUILD_ID='2026-09-09 12:40';
+const BUILD_ID='2026-09-09 14:05';
 (async function checkBuild(){
   if(!location.protocol.startsWith('http')) return;   /* a local file has no server to ask */
   try{
@@ -1794,18 +1825,74 @@ function meArt(){ return (S.g==='f' && ART.heroine) ? ART.heroine : ART.hero }
    the decomposition the child is about to be taught — the world and the
    maths say the same sentence. The clue is a property of the STORY, not of
    the fighter: clue i is the i-th piece of the belt, whoever was holding it. */
+/* Each foe's power is a MECHANIC, not a caption. The trait below changes
+   what the round actually does, so a child who fights the Ten Machine
+   experiences tens instead of reading the word. See TRAITS. */
 const FOES=[
-  {t:0, key:'i2',  name:'הַתְּאוֹמִים',        power:'עוֹשִׂים כָּל דָּבָר פַּעֲמַיִם'},
-  {t:1, key:'i10', name:'מְכוֹנַת הָעֶשֶׂר',   power:'סוֹפֶרֶת רַק בַּעֲשָׂרוֹת'},
-  {t:2, key:'i5',  name:'יַד הַפְּלָדָה',      power:'סוֹפֵר בַּחֲמִישִׁיּוֹת'},
-  {t:3, key:'i4',  name:'אַרְבַּע זְרוֹעוֹת',   power:'מַכְפִּיל בִּשְׁנַיִם, וְאָז שׁוּב בִּשְׁנַיִם'},
-  {t:4, key:'i8',  name:'שְׁמוֹנֶה הַצְּלָלִים', power:'מִתְפַּצֵּל לְאַרְבַּע, וְעוֹד אַרְבַּע'},
-  {t:5, key:'i3',  name:'שְׁלוֹשֶׁת הָאֶגְרוֹפִים', power:'פַּעֲמַיִם, וְעוֹד מַכָּה אַחַת'},
-  {t:6, key:'i6',  name:'שֵׁשׁ הַשְּׁרִירִים',  power:'חָמֵשׁ מַכּוֹת, וְעוֹד אַחַת'},
-  {t:7, key:'i9',  name:'תִּשְׁעַת הַזְּנָבוֹת', power:'חָמֵשׁ מַכּוֹת, וְעוֹד אַרְבַּע'},
-  {t:8, key:'i7',  name:'שֶׁבַע הַמַּסֵּכוֹת',  power:'חָמֵשׁ מַכּוֹת וְעוֹד שְׁתַּיִם — וּבְכָל אַחַת פָּנִים אֲחֵרוֹת'},
-  {t:9, key:'champ',name:'הָאַלּוּף',          power:'הוּא יוֹדֵעַ הַכֹּל'}
+  {t:0, key:'i2',  name:'הַתְּאוֹמִים',        trait:'twin',
+   power:'עוֹשִׂים כָּל דָּבָר פַּעֲמַיִם'},
+  {t:1, key:'i10', name:'מְכוֹנַת הָעֶשֶׂר',   trait:'tens',
+   power:'סוֹפֶרֶת רַק בַּעֲשָׂרוֹת'},
+  {t:2, key:'i5',  name:'יַד הַפְּלָדָה',      trait:'five',
+   power:'סוֹפֵר בַּחֲמִישִׁיּוֹת'},
+  {t:3, key:'i4',  name:'אַרְבַּע זְרוֹעוֹת',   trait:'dbl',
+   power:'מַכְפִּיל בִּשְׁנַיִם, וְאָז שׁוּב בִּשְׁנַיִם'},
+  {t:4, key:'i8',  name:'שְׁמוֹנֶה הַצְּלָלִים', trait:'split',
+   power:'מִתְפַּצֵּל לְאַרְבַּע, וְעוֹד אַרְבַּע'},
+  {t:5, key:'i3',  name:'שְׁלוֹשֶׁת הָאֶגְרוֹפִים', trait:'extra',
+   power:'פַּעֲמַיִם — וְאָז מַכָּה שְׁלִישִׁית שֶׁלֹּא רוֹאִים'},
+  {t:6, key:'i6',  name:'שֵׁשׁ הַשְּׁרִירִים',  trait:'salvo',
+   power:'שֵׁשׁ מַכּוֹת מְהִירוֹת, אַחַת אַחֲרֵי הַשְּׁנִיָּה'},
+  {t:7, key:'i9',  name:'תִּשְׁעַת הַזְּנָבוֹת', trait:'chain',
+   power:'זָנָב אַחֲרֵי זָנָב — חָמֵשׁ, וְאָז עוֹד אַרְבַּע'},
+  {t:8, key:'i7',  name:'שֶׁבַע הַמַּסֵּכוֹת',  trait:'mask',
+   power:'בְּכָל מַכָּה פָּנִים אֲחֵרוֹת — וְאַף פַּעַם לֹא אוֹתוֹ קְרָב'},
+  {t:9, key:'champ',name:'הָאַלּוּף',          trait:'champ',
+   power:'הוּא יוֹדֵעַ אֶת כָּל הַמַּכּוֹת שֶׁל כֻּלָּם'}
 ];
+
+/* ============================================================
+   THE ROUNDS — one grid, several games
+   Building a rectangle was the only thing the game ever asked, so
+   fifteen minutes in, a child had seen everything it does. These are
+   different QUESTIONS about the same picture, and each one is worth a
+   different kind of evidence — a repaired shield is scaffolded and
+   proves less than a rectangle built from nothing.
+   ============================================================ */
+const MODES={
+  build:   {ev:'build',   tag:'בְּנֵה'},        /* draw a x b from nothing   */
+  missing: {ev:'build',   tag:'כַּמָּה שׁוּרוֹת?'}, /* the count is the answer  */
+  repair:  {ev:'concept', tag:'תַּקֵּן'},        /* fill the hole             */
+  recall:  {ev:'recall',  tag:'מִזִּכָּרוֹן'}      /* no grid at all            */
+};
+/* What each fighter does to the round. Only `modes` and the hooks below
+   are read anywhere — a trait is data, not a special case in the engine. */
+const TRAITS={
+  twin:  {modes:['build','repair'],            twice:true,
+          say:'הַתְּאוֹמִים זוֹרְקִים כָּל מַכָּה פַּעֲמַיִם.'},
+  /* a board ten wide has no interior tenth column, so the Ten Machine
+     rules ROWS — which is what a group of ten actually looks like here */
+  tens:  {modes:['build','missing'],           guide:1, axis:'row',
+          say:'הַמְּכוֹנָה סוֹפֶרֶת רַק בַּעֲשָׂרוֹת.'},
+  five:  {modes:['build','missing','repair'],  guide:5, axis:'col',
+          say:'יַד הַפְּלָדָה סוֹפֶרֶת בַּחֲמִישִׁיּוֹת.'},
+  dbl:   {modes:['repair','build'],            repairHalf:true,
+          say:'אַרְבַּע זְרוֹעוֹת מַכְפִּילוֹת אֶת מָה שֶׁכְּבָר יֵשׁ.'},
+  split: {modes:['build'],                     forceSplit:true,
+          say:'הַצְּלָלִים מִתְפַּצְּלִים — הַמָּגֵן צָרִיךְ שְׁתֵּי חֲתִיכוֹת.'},
+  extra: {modes:['build','repair'],            extraGroup:true,
+          say:'הַמַּכָּה הַשְּׁלִישִׁית מַגִּיעָה אַחֲרֵי שֶׁחָשַׁבְתָּ שֶׁנִּגְמַר.'},
+  salvo: {modes:['repair','missing','build'],  salvo:3,
+          say:'שֵׁשׁ הַשְּׁרִירִים לֹא עוֹצְרִים בֵּין מַכָּה לְמַכָּה.'},
+  chain: {modes:['build'],                     forceSplit:true, chained:true,
+          say:'הַזְּנָבוֹת בָּאִים אֶחָד אַחֲרֵי הַשֵּׁנִי.'},
+  mask:  {modes:['build','missing','repair'],  shuffle:true, faces:true,
+          say:'בְּכָל מַכָּה הוּא מַחֲלִיף פָּנִים — וְגַם אֶת הַמַּכָּה.'},
+  champ: {modes:['build','missing','repair'],  shuffle:true, rotate:true,
+          say:'הוּא מַכִּיר אֶת הַמַּכּוֹת שֶׁל כָּל הָעֲשָׂרָה.'}
+};
+const PLAIN={modes:['build']};
+function traitOf(foe){ return TRAITS[foe&&foe.trait] || PLAIN }
 /* the ten pieces of the belt, in the order the story gives them up */
 const CLUES=[
   'הַתְּאוֹמִים אָמְרוּ שֶׁמִּישֶׁהוּ שִׁלֵּם לָהֶם. הֵם לֹא יוֹדְעִים מִי.',
@@ -1862,8 +1949,16 @@ function startFight(foe, mode){
   const story = mode!=='training' && storyOpen() && foe===storyFoe();
   F={foe, story, hpMe:100, hpFoe:100, i:0, total:8, combo:0, best:0, blocks:0,
      score:0, misses:0, learned:[], last:null, over:false,
-     recalls:0, recallHits:0, exact:0, equiv:0, helps:0, mode:(story?'story':'training')};
-  logEvent('fightStart',{foe:foe.key, mode:F.mode});
+     recalls:0, recallHits:0, exact:0, equiv:0, helps:0, kind:(story?'story':'training'),
+     traitDef:traitOf(foe), pending:[], charge:0, counters:0, face:0, clean:0};
+  /* the champion borrows a different fighter's trait every round */
+  F.traitKey = foe.trait;
+  F.rotate = F.traitDef.rotate ? Object.keys(TRAITS).filter(k=>k!=='champ') : null;
+  if(F.rotate) F.rotate.sort(()=>Math.random()-0.5);
+  logEvent('fightStart',{foe:foe.key, mode:F.kind});
+  /* the power is said out loud once, then demonstrated for the rest of
+     the fight — the child should meet the mechanic, not read about it */
+  F.introSaid=false;
   show('fight');
   $('hudMe').textContent=S.name; $('hudFoe').textContent=foe.name;
   $('figMe').src=meArt(); $('figFoe').src=ART[foe.key]||ART.champ;
@@ -1874,9 +1969,16 @@ function startFight(foe, mode){
      went, not on a constant. A child who is building alone can take three
      new facts; a child who is leaning on help should meet one. */
   resetBudget(newBudgetFor());
+  drawCharge();
   sizeGrid(2,2); buildGrid();
   setTimeout(()=>fxInit('fx'),40);
-  setTimeout(turn,500);
+  const intro=F.traitDef && F.traitDef.say;
+  if(intro){
+    banner(foe.name);
+    setTimeout(()=>{ if(!F||F.over) return;
+      toast(intro); speak(intro.replace(/[֑-ׇ]/g,'')) }, 420);
+    setTimeout(turn, 1500);
+  } else setTimeout(turn,500);
 }
 
 /* the board is only as big as this exercise needs — a 10x10 grid to build
@@ -1978,22 +2080,143 @@ function turn(){
   if(!F || F.over) return;
   if(F.i>=F.total || F.hpFoe<=0 || F.hpMe<=0) return endFight();
   if(!F.seen) F.seen={};
-  /* a reserved round asks for the fact cold; otherwise the child builds */
+  /* a blow still owed from this round — the twin's second throw, the third
+     fist, the next tail — is served before anything new is chosen */
+  if(F.pending && F.pending.length){
+    const nx=F.pending.shift();
+    return openRound(nx.a, nx.b, nx.mode, nx.extra);
+  }
   const cold=recallPick();
-  const [a,b]= cold || pickForTurn();
-  if(cold) F.seen[fk(a,b)]=1;
+  if(cold){
+    const [a,b]=cold;
+    F.seen[fk(a,b)]=1;
+    F.cur=[a,b]; F.need=a*b; F.have=0; F.pieces=[]; F.helped=false;
+    F.t0=0; F.rung=rungOf(a,b); F.mode='recall';
+    $('incoming').hidden=true;
+    return askRecall(a,b);
+  }
+  /* THE ROUND TYPE LEADS AND THE FACT FOLLOWS.
+     Choosing the fact first and then asking "what can I do with this?"
+     buried the newer round types: asking a fact backwards only makes sense
+     once it is solid, and the picker deliberately serves the shakiest
+     facts — so the two almost never met. Deciding the round first, then
+     finding a fact that suits it, is the same fix that made retrieval
+     happen at all, and it costs the curriculum nothing: the fallback is
+     always an ordinary build of whatever the picker wanted anyway. */
+  /* THE SHAPE OF A FIGHT, in slots rather than in luck:
+       0  warm-up, something solid
+       1  the fighter's own game (repair / backwards) — VARIETY_SLOTS
+       2  retrieval                                   — RECALL_SLOTS
+       3  new material, or whatever is due
+       4  the fighter's game again
+       5  retrieval
+       6  the fighter's game
+       7  retrieval / finisher
+     Reserving slots is what made retrieval actually happen; letting the
+     round type compete freely against new material starved one or the
+     other every time. Slots give each its share and cannot starve either:
+     a slot with no suitable fact quietly becomes an ordinary build. */
+  if(VARIETY_SLOTS.indexOf(F.i)>=0){
+    const want=pickMode();
+    if(want!=='build'){
+      const chosen=pickForMode(want);
+      if(chosen) return openRound(chosen[0], chosen[1], want);
+    }
+  }
+  const [a,b]=pickForTurn();
+  openRound(a, b, 'build');
+}
+/* a fact this round type can honestly be asked about, or null */
+function pickForMode(mode){
+  if(mode==='build') return null;
+  const fits=([a,b])=>{
+    if(F.seen[fk(a,b)]) return false;
+    const L=lvl(a,b);
+    if(!shown(a,b)) return false;          /* never a new fact in a new game */
+    if(mode==='missing') return L>=2 && Math.min(a,b)>1 && a<=ROWS_MAX;
+    if(mode==='repair')  return L>=1 && a*b>=4;
+    return true;
+  };
+  const c=pool().filter(fits);
+  if(!c.length) return null;
+  /* prefer what is due, then what is weakest — the round type changes, the
+     scheduling priorities do not */
+  c.sort((x,y)=>(isDue(y[0],y[1])-isDue(x[0],x[1])) || (lvl(x[0],x[1])-lvl(y[0],y[1])));
+  const head=c.slice(0, Math.max(1, Math.min(5, Math.ceil(c.length*0.35))));
+  const p=head[Math.floor(Math.random()*head.length)];
+  F.seen[fk(p[0],p[1])]=1;
+  return p;
+}
+const ROWS_MAX=10;
+/* which game this round is. The fighter decides what is on the menu; the
+   child's own state decides what is fair to order from it. */
+function pickMode(){
+  /* a fight without a trait is still a fight — plain building is the floor,
+     never a crash */
+  const T=F.traitDef||PLAIN;
+  const list=(T.modes||['build']).slice();
+  if(!list.length) return 'build';
+  /* the masked fighter and the champion never repeat themselves */
+  if(T.shuffle) return list[Math.floor(Math.random()*list.length)];
+  /* Everyone else leans on their signature — it is what makes them
+     themselves — but every other round rotates through the rest, so no
+     fighter is eight identical rounds either. */
+  if(F.i%2===0 || list.length<2) return list[0];
+  return list[1 + ((F.i>>1) % (list.length-1))];
+}
+/* one place that opens a round, whatever kind it is */
+function openRound(a,b,mode,extra){
   F.cur=[a,b]; F.need=a*b; F.have=0; F.pieces=[]; F.helped=false;
   F.t0=0; F.rung=rungOf(a,b);
+  F.mode=mode||'build'; F.extra=extra||null;
+  F.locked=0; F.minPieces=1; F.hole=null;
   $('incoming').hidden=true;
-  /* retrieval turn: the grid never appears, so a right answer here is the
-     only thing in the game that proves the fact was actually remembered */
-  if(cold) return askRecall(a,b);
+  $('recallPane').hidden=true; $('gridPane').hidden=false;
   sizeGrid(a,b); buildGrid();
   $('needN').textContent=F.need;
   $('haveN').textContent='0';
   $('pieces').innerHTML='';
-  if(!shown(a,b)) return demoFirst(a,b);
+  /* nothing is ever demanded before it has been demonstrated */
+  if(!shown(a,b)){ F.mode='build'; return demoFirst(a,b) }
+  showRoundTag();
+  if(F.mode==='repair')  return askRepair(a,b);
+  if(F.mode==='missing') return askMissing(a,b);
   askTurn(a,b);
+}
+/* a child should always know which game they are being asked to play */
+function showRoundTag(){
+  const t=$('roundTag'); if(!t) return;
+  const m=MODES[F.mode];
+  const label = F.extra==='twin'  ? 'שׁוּב — אוֹתָהּ מַכָּה'
+              : F.extra==='third' ? 'הַמַּכָּה הַשְּׁלִישִׁית'
+              : F.extra==='salvo' ? 'מַכָּה מְהִירָה'
+              : m ? m.tag : '';
+  t.textContent=label;
+  t.hidden=!label;
+  t.className='roundtag rt-'+F.mode;
+}
+/* The Ten Machine and the Steel Hand do not just SAY they count in tens and
+   fives — the board they force you to fight on is ruled in tens and fives. */
+/* The fighter rules the board he drags you onto. The Steel Hand draws a
+   line every fifth column, so a shield is read in fives. The Ten Machine
+   rules whichever axis is actually ten long — a line under every row when
+   the rows ARE tens, and down the tenth column when they are not. Ruling
+   an axis that is not the fighter's number would just be stripes. */
+function paintGuides(){
+  const T=F&&F.traitDef; const g=T&&T.guide;
+  if(!g||!G||!F.cur) return;
+  const a=F.cur[0], b=F.cur[1];
+  let axis=T.axis||'col', step=g;
+  if(axis==='row'){
+    if(b===10) step=1;                 /* every row is a ten          */
+    else if(a===10){ axis='col'; step=1 } /* the tens run down instead */
+    else return;                       /* nothing here is a ten       */
+  }
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const el=cellAt(r,c); if(!el) continue;
+    if(axis==='row'){ if((r+1)%step===0 && r<ROWS-1) el.classList.add('ruleRow') }
+    else if((c+1)%step===0 && c<COLS-1) el.classList.add('rule');
+  }
 }
 /* the warm-up is deliberate: the strongest fact the child owns, first */
 function pickForTurn(){
@@ -2025,6 +2248,8 @@ function pickForTurn(){
    for something worth asking cold. Two per fight — enough to measure,
    few enough that the game is still about building. */
 const RECALL_SLOTS=[2,5,7];
+/* the rounds the fighter gets to play his own game on */
+const VARIETY_SLOTS=[1,4,6];
 function recallQuota(){ return 2 }
 function recallCandidates(){
   const out=[];
@@ -2056,6 +2281,9 @@ function clearGrid(){
   [...G.el.children].forEach(c=>{c.className='cell'});
   G.el.querySelectorAll('.gridlbl').forEach(e=>e.remove());
   $('readout').hidden=true;
+  /* the fighter's ruling of the board is part of the board, not part of
+     the child's answer — clearing the answer must not clear the arena */
+  paintGuides();
 }
 
 /* ---------- demo before demand ---------- */
@@ -2161,6 +2389,102 @@ function askTurn(a,b){
   };
   speak(objectiveSay(a,b,rung));
 }
+/* ============================================================
+   REPAIR — the shield exists, and it has a hole in it
+   Faster and warmer than building from nothing: the child sees the whole
+   rectangle, sees what is missing, and closes it. Because most of the
+   answer is already on the board, this proves the shape is understood —
+   never that it could have been built alone.
+   ============================================================ */
+function askRepair(a,b){
+  const T=F.traitDef;
+  clearGrid();
+  /* Four Arms takes exactly half and asks for it to be doubled; everyone
+     else knocks out a chunk somewhere in the middle. */
+  let holeRows, holeCols, r0=0, c0=0;
+  if(T.repairHalf && a%2===0){ holeRows=a/2; holeCols=b; r0=a-holeRows }
+  else if(T.repairHalf && b%2===0){ holeRows=a; holeCols=b/2; c0=b-holeCols }
+  else {
+    holeRows=Math.max(1,Math.min(a-1, Math.ceil(a/2)));
+    holeCols=b;
+    r0=a-holeRows;
+  }
+  /* lay the intact part down */
+  for(let r=0;r<a;r++) for(let c=0;c<b;c++){
+    const inHole = r>=r0 && r<r0+holeRows && c>=c0 && c<c0+holeCols;
+    if(inHole) continue;
+    const el=cellAt(r,c); if(!el) continue;
+    el.classList.add('locked','given','pA');
+  }
+  const given=a*b-holeRows*holeCols;
+  F.locked=given; F.have=given;
+  F.hole={r0, c0, rows:holeRows, cols:holeCols, area:holeRows*holeCols};
+  /* mark the gap so a child can see the shape of what is missing */
+  for(let r=r0;r<r0+holeRows;r++) for(let c=c0;c<c0+holeCols;c++){
+    const el=cellAt(r,c); if(el) el.classList.add('hole') }
+  $('haveN').textContent=given;
+  const objective=$('objective');
+  objective.innerHTML = T.repairHalf
+    ? `הַמָּגֵן הוּא חֲצִי <b>${a}×${b}</b>. {תַּכְפִּיל|תַּכְפִּילִי} אוֹתוֹ — {תַּשְׁלִים|תַּשְׁלִימִי} עוֹד
+       <b>${holeRows}×${holeCols}</b>.`
+    : `הַמָּגֵן נִשְׁבַּר. {תַּשְׁלִים|תַּשְׁלִימִי} בְּדִיּוּק אֶת הַחוֹר — <b>${F.hole.area}</b> חֲתִיכוֹת.`;
+  $('gridHint').innerHTML=`הַכֹּל יַחַד צָרִיךְ לִהְיוֹת <b style="color:var(--gold-hi)">${a} × ${b} = ${F.need}</b>.`;
+  showIncoming(F.need, 'תִּקּוּן מָגֵן');
+  armRound(()=>{
+    speak(T.repairHalf
+      ? `חצי מהמגן כבר עומד. תכפיל אותו.`
+      : `יש חור במגן. תשלים בדיוק ${F.hole.area} חתיכות.`);
+  });
+}
+
+/* ============================================================
+   MISSING — the count IS the answer
+   "You have twelve, and the rows are four wide. How many rows?"
+   The child drags DOWN a corridor of fixed width and watches the total
+   climb — four, eight, twelve — which is multiplication read backwards
+   and is a genuinely different question from "draw me a rectangle".
+   ============================================================ */
+function askMissing(a,b){
+  clearGrid();
+  /* the known side is the narrow one, so the drag is a count of rows */
+  F.corr = b;                      /* corridor width, fixed */
+  F.minPieces=1;
+  /* The corridor shows the WIDTH of a row and nothing else. Marking a rows
+     deep would draw the answer on the board — the whole question is how
+     far down to go, so the corridor runs the full height. */
+  for(let r=0;r<ROWS;r++) for(let c=0;c<Math.min(b,COLS);c++){
+    const el=cellAt(r,c); if(el) el.classList.add('corridor') }
+  $('objective').innerHTML=
+    `הַמַּכָּה הִיא <b>${F.need}</b>, וְכָל שׁוּרָה הִיא <b>${b}</b>.
+     כַּמָּה שׁוּרוֹת {אַתָּה צָרִיךְ|אַתְּ צְרִיכָה}?`;
+  $('gridHint').innerHTML=`{תִּמְשֹׁךְ|תִּמְשְׁכִי} לְמַטָּה בָּעַמּוּדָה הַמְּסֻמֶּנֶת וְ{תִסְפֹּר|תִסְפְּרִי} אֶת הַשּׁוּרוֹת.`;
+  showIncoming(F.need, 'מַכָּה שֶׁל');
+  armRound(()=>speak(`המכה היא ${F.need}. כל שורה היא ${b}. כמה שורות?`));
+}
+
+/* shared: the threat banner, and the "I am ready" gate that starts nothing
+   until the child says so — no clock ever runs on confusion */
+function showIncoming(n, label){
+  const inc=$('incoming'); inc.hidden=false;
+  $('incN').textContent=n; $('incLab').textContent=label;
+  beep(180,.28,'sawtooth',.05,120); buzz(20);
+}
+function armRound(say){
+  $('demo').hidden=true;
+  $('gridPane').style.opacity='1';
+  $('fight').classList.remove('demoing');
+  $('readyBtn').hidden=false;
+  $('undoBtn').disabled=true; $('helpBtn').disabled=true;
+  $('readyBtn').onclick=()=>{
+    $('readyBtn').hidden=true;
+    $('undoBtn').disabled=false; $('helpBtn').disabled=false;
+    nstop(); ac(); beep(660,.1,'square',.05,880);
+    F.t0=performance.now();
+    charge(true);
+  };
+  say && say();
+}
+
 /* ============================================================
    THE RETRIEVAL TURN
    No grid, no outline, no counting — "6 x 4 = ?" and nothing else.
@@ -2322,23 +2646,36 @@ function gridMove(e){
   if(r!==DRAG.r1||c!==DRAG.c1){ DRAG.r1=r; DRAG.c1=c; paintDrag(); beep(720,.03,'square',.02) }
 }
 function dragBox(){
-  const r0=Math.min(DRAG.r0,DRAG.r1), r1=Math.max(DRAG.r0,DRAG.r1);
-  const c0=Math.min(DRAG.c0,DRAG.c1), c1=Math.max(DRAG.c0,DRAG.c1);
+  let r0=Math.min(DRAG.r0,DRAG.r1), r1=Math.max(DRAG.r0,DRAG.r1);
+  let c0=Math.min(DRAG.c0,DRAG.c1), c1=Math.max(DRAG.c0,DRAG.c1);
+  /* In the missing-factor round the width is not the child's to choose —
+     the question is how many rows, so the drag is snapped to the corridor
+     and the finger only ever counts downwards. */
+  if(F && F.mode==='missing' && F.corr){
+    c0=0; c1=Math.min(COLS,F.corr)-1; r0=0;
+  }
   return {r0,r1,c0,c1,h:r1-r0+1,w:c1-c0+1};
 }
 function paintDrag(){
   [...G.el.children].forEach(c=>c.classList.remove('drag','bad'));
   const b=dragBox();
   let clash=false;
-  for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++)
-    if(cellAt(r,c).classList.contains('locked')) clash=true;
+  for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++){
+    const el=cellAt(r,c);
+    if(el && el.classList.contains('locked')) clash=true;
+  }
   for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++)
     cellAt(r,c).classList.add(clash?'bad':'drag');
   const ro=$('readout'); ro.hidden=false;
   const area=b.w*b.h;
   const col = clash ? 'var(--red-hi)'
             : (F.have+area<=F.need ? 'var(--gold-hi)' : 'var(--red-hi)');
-  if(area===1){
+  if(F.mode==='missing'){
+    /* the whole point of this round is watching the total climb by b */
+    ro.classList.remove('words');
+    ro.innerHTML = `${b.h} ${b.h===1?'שׁוּרָה':'שׁוּרוֹת'} × ${b.w} =
+      <b style="color:${col}">${area}</b>`;
+  }else if(area===1){
     /* "1 × 1 = 1" carries no information and reads as noise to a child.
        While the finger sits on one square, show the running count instead. */
     const now=F.have+1;
@@ -2356,16 +2693,25 @@ function gridUp(e){
   [...G.el.children].forEach(c=>c.classList.remove('drag','bad'));
   $('readout').hidden=true;
   let clash=false;
-  for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++)
-    if(cellAt(r,c).classList.contains('locked')) clash=true;
-  if(clash){ beep(150,.14,'sawtooth',.05); toast('הַחֲתִיכָה דּוֹרֶכֶת עַל אַחֶרֶת. {תְּבַטֵּל|תְּבַטְּלִי} אוֹ {תִּבְחַר|תִּבְחֲרִי} מָקוֹם אַחֵר.'); return }
+  for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++){
+    const el=cellAt(r,c);
+    if(el && el.classList.contains('locked')) clash=true;
+  }
+  if(clash){ beep(150,.14,'sawtooth',.05);
+    toast(F.mode==='repair'
+      ? 'זֶה חֵלֶק שֶׁכְּבָר עוֹמֵד. {תַּשְׁלִים|תַּשְׁלִימִי} רַק אֶת הַחוֹר.'
+      : 'הַחֲתִיכָה דּוֹרֶכֶת עַל אַחֶרֶת. {תְּבַטֵּל|תְּבַטְּלִי} אוֹ {תִּבְחַר|תִּבְחֲרִי} מָקוֹם אַחֵר.');
+    return }
   const area=b.w*b.h;
   if(F.have+area > F.need){
     beep(150,.18,'sawtooth',.05); buzz(30);
     for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++){
-      const el=cellAt(r,c); el.classList.add('bad');
+      const el=cellAt(r,c); if(!el) continue;
+      el.classList.add('bad');
       setTimeout(()=>el.classList.remove('bad'),450) }
-    toast(`זֶה כְּבָר ${F.have+area}. הַמָּגֵן צָרִיךְ לִהְיוֹת בְּדִיּוּק ${F.need}.`);
+    toast(F.mode==='missing'
+      ? `${b.h} שׁוּרוֹת זֶה כְּבָר ${F.have+area}. זֶה יוֹתֵר מִדַּי — ${F.need} זֶה פָּחוֹת שׁוּרוֹת.`
+      : `זֶה כְּבָר ${F.have+area}. הַמָּגֵן צָרִיךְ לִהְיוֹת בְּדִיּוּק ${F.need}.`);
     return;
   }
   /* lock the piece in */
@@ -2373,7 +2719,8 @@ function gridUp(e){
      being counted out are one colour, not an alternating stripe */
   const half = (area===1 || F.pieces.length===0) ? 'pA' : 'pB';
   for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++){
-    const el=cellAt(r,c); el.classList.remove('target');
+    const el=cellAt(r,c); if(!el) continue;
+    el.classList.remove('target','hole','corridor');
     el.classList.add('locked','tick',half);
     el.style.animationDelay=(((r-b.r0)+(c-b.c0))*0.018)+'s';
   }
@@ -2383,9 +2730,12 @@ function gridUp(e){
   drawLabels();
   renderPieces();
   beep(560+F.pieces.length*90,.09,'square',.045,760); buzz(12);
+  chargeUp(area, b);
   if(F.have!==F.need){
     const left=F.need-F.have;
-    countEcho(area===1 ? `${F.have}` : `${F.have} מִתּוֹךְ ${F.need}`);
+    const g=F.traitDef&&F.traitDef.guide;
+    countEcho(g && F.have%g===0 ? `${F.have}` :
+              area===1 ? `${F.have}` : `${F.have} מִתּוֹךְ ${F.need}`);
     if(area===1 && F.pieces.length>=3)
       $('gridHint').innerHTML=`{אַתָּה סוֹפֵר|אַתְּ סוֹפֶרֶת} אַחַת-אַחַת — זֶה בְּסֵדֶר.
         עוֹד <b style="color:var(--gold-hi)">${left}</b>.`;
@@ -2415,10 +2765,66 @@ function builtStructure(a,b){
 function finishBuild(){
   if(!F||F.over||!F.cur) return;
   const [a,b]=F.cur;
+
+  /* ---- repair: the hole had to be filled, and only the hole ---- */
+  if(F.mode==='repair'){
+    /* the given part plus the new pieces must be exactly the rectangle */
+    const covered=coveredRect(a,b);
+    if(!covered) return resolveTurn('equivalent');
+    /* a repair is scaffolded: most of the answer was already on the board,
+       so it can prove the shape is understood and nothing more */
+    return resolveTurn(F.helped ? 'assisted' : 'traced');
+  }
+
+  /* ---- missing factor: the answer was the number of rows ---- */
+  if(F.mode==='missing'){
+    const p=F.pieces[0];
+    const rows=F.pieces.reduce((n,q)=>n+q.h,0);
+    if(!p || rows!==a) return resolveTurn('equivalent');
+    /* found the count without being shown it — that is build knowledge,
+       read backwards. It is not retrieval: the grid was on the screen. */
+    return resolveTurn(F.helped ? 'assisted' : 'exact');
+  }
+
+  /* ---- the Shadows and the Tails want it in two pieces ----
+     Asked once per fight, and once only. A child who has just built a
+     correct rectangle has done the maths; being told "no" twice for a
+     boss's gimmick is a punishment, not a lesson. So: the first single
+     piece is sent back with the split spelled out, and after that the
+     fighter takes what he is given. */
+  if(F.traitDef && F.traitDef.forceSplit && F.pieces.length<2 && !F.splitTaught){
+    F.splitTaught=true;
+    const sp=splitFor(a,b);
+    undoAll();
+    toast(F.foe.trait==='chain'
+      ? 'זָנָב אֶחָד לֹא מַסְפִּיק. {תִּבְנֶה|תִּבְנִי} אוֹתוֹ בִּשְׁתֵּי חֲתִיכוֹת.'
+      : 'הַצְּלָלִים מִתְפַּצְּלִים. {תִּבְנֶה|תִּבְנִי} אוֹתוֹ בִּשְׁתֵּי חֲתִיכוֹת.');
+    $('gridHint').innerHTML = sp
+      ? `נַסֵּה: <b style="color:var(--gold-hi)">${sp.say}</b>`
+      : `שְׁתֵּי חֲתִיכוֹת שֶׁיַּחַד הֵן <b style="color:var(--gold-hi)">${F.need}</b>.`;
+    beep(190,.16,'sawtooth',.05); buzz(24);
+    logEvent('splitAsked',{a,b});
+    return;
+  }
+
   const shape=builtStructure(a,b);
   if(shape==='equivalent') return resolveTurn('equivalent');
   resolveTurn(F.helped ? 'assisted' : (F.rung<2 ? 'traced' : 'exact'));
 }
+/* does everything on the board — given part included — form exactly a x b? */
+function coveredRect(a,b){
+  const cells=[];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const el=cellAt(r,c);
+    if(el && el.classList.contains('locked')) cells.push([r,c]);
+  }
+  if(cells.length!==a*b) return false;
+  const rs=cells.map(x=>x[0]), cs=cells.map(x=>x[1]);
+  const h=Math.max(...rs)-Math.min(...rs)+1, w=Math.max(...cs)-Math.min(...cs)+1;
+  if(h*w!==cells.length) return false;
+  return (h===a&&w===b)||(h===b&&w===a);
+}
+function undoAll(){ while(F && F.pieces && F.pieces.length) undoPiece() }
 /* a short, calm confirmation of where the count stands */
 function countEcho(txt){
   const ro=$('readout');
@@ -2463,9 +2869,21 @@ function renderPieces(){
 function undoPiece(){
   if(!F||!F.pieces||!F.pieces.length) return;
   const p=F.pieces.pop();
-  for(let r=p.r0;r<=p.r1;r++) for(let c=p.c0;c<=p.c1;c++)
-    cellAt(r,c).className='cell';
+  for(let r=p.r0;r<=p.r1;r++) for(let c=p.c0;c<=p.c1;c++){
+    const el=cellAt(r,c); if(!el) continue;
+    el.className='cell';
+    /* undo must put back what the ROUND put there, not bare board: the
+       intact half of a repair and the corridor of a missing round are part
+       of the question, not part of the child's answer */
+    if(F.mode==='missing' && r<Math.min(F.cur[0],ROWS) && c<Math.min(F.cur[1],COLS))
+      el.classList.add('corridor');
+    if(F.mode==='repair' && F.hole &&
+       r>=F.hole.r0 && r<F.hole.r0+F.hole.rows &&
+       c>=F.hole.c0 && c<F.hole.c0+F.hole.cols)
+      el.classList.add('hole');
+  }
   F.have-=p.area; $('haveN').textContent=F.have;
+  paintGuides();          /* the arena survives an undo; only the answer goes */
   drawLabels(); renderPieces(); beep(240,.09,'square',.04);
 }
 function helpMe(){
@@ -2513,6 +2931,9 @@ function resolveTurn(outcome, msIn){
   if(outcome==='exact') F.exact++;
   if(outcome==='equivalent') F.equiv++;
   if(outcome==='assisted') F.helps++;
+  /* answering cold is the cleanest block in the game, so it charges most */
+  if(outcome==='recallHit'){ F.charge=Math.min(CHARGE_MAX,F.charge+45); drawCharge() }
+  /* a miss does not drain the meter — being wrong is not a second penalty */
 
   if(blocked){
     F.blocks++; F.combo++; F.best=Math.max(F.best,F.combo);
@@ -2553,6 +2974,7 @@ function resolveTurn(outcome, msIn){
             if(F.hpFoe<=0||F.i>=F.total) endFight(); else turn() }) });
       return;
     }
+    traitFollowUp(a,b,outcome);
     banner(outcome==='recallHit' ? '{מִזִּכָּרוֹן|מִזִּכָּרוֹן}!'
          : F.pieces && F.pieces.length>1 ? '{פֵּרַקְתָּ|פֵּרַקְתְּ} אוֹתוֹ!'
          : '{חָסַמְתָּ|חָסַמְתְּ}!');
@@ -2563,7 +2985,8 @@ function resolveTurn(outcome, msIn){
          ? `${F.pieces.map(p=>p.area).join(' ועוד ')} זה ${F.need}. חסמת.`
          : `${a} כפול ${b} זה ${F.need}.`);
     narrate(line, ()=>{ if(!F||F.over) return; F.narrating=false;
-        if(F.hpFoe<=0||F.i>=F.total) endFight(); else turn() });
+        fireCounter(()=>{ if(!F||F.over) return;
+          if(F.hpFoe<=0||F.i>=F.total) endFight(); else turn() }) });
   }else{
     /* the retrieval was wrong. The shield takes it — the child does not. */
     F.misses++; F.combo=0;
@@ -2589,6 +3012,106 @@ function resolveTurn(outcome, msIn){
   /* the follow-on is driven by the narration, not by a fixed delay */
   if(!F.narrating) setTimeout(()=>{ if(!F||F.over) return;
     if(F.hpFoe<=0||F.i>=F.total) endFight(); else turn() },1150);
+}
+/* ============================================================
+   THE COUNTER — the arcade layer, which never punishes
+   A shield built the clean way (in as few pieces as the shape allows,
+   with no help) charges a meter. Full meter fires a counter-attack the
+   child did not have to earn twice. Nothing here can be lost by being
+   slow, by asking for help, or by getting the maths wrong — those cost
+   the charge, never the child. It rewards, it does not penalise.
+   ============================================================ */
+const CHARGE_MAX=100;
+function chargeUp(area, box){
+  if(!F) return;
+  /* a big, confident piece charges more than a square counted out alone */
+  const gain = F.helped ? 3 : Math.min(34, 6 + area*1.6);
+  F.charge=Math.min(CHARGE_MAX, F.charge+gain);
+  drawCharge();
+}
+function drawCharge(){
+  const bar=$('chargeBar'); if(!bar) return;
+  const pct=Math.round(F.charge);
+  bar.style.width=pct+'%';
+  const wrap=$('chargeWrap');
+  wrap.classList.toggle('full', F.charge>=CHARGE_MAX);
+  $('chargeLab').textContent = F.charge>=CHARGE_MAX ? 'מַכָּה נֶגְדִּית מוּכָנָה' : 'מַד כּוֹחַ';
+}
+/* fired when a round is blocked cleanly and the meter is full */
+function fireCounter(then){
+  if(!F || F.charge<CHARGE_MAX) return then&&then();
+  F.charge=0; F.counters++; drawCharge();
+  const dmg=18+F.counters*2;
+  F.hpFoe=Math.max(0,F.hpFoe-dmg);
+  F.score+=150;
+  $('scoreN').textContent=F.score.toLocaleString('en-US');
+  banner('מַכָּה נֶגְדִּית!');
+  const st=$('stage');
+  const me=$('figMe'); if(me){ me.classList.remove('lunge'); void me.offsetWidth; me.classList.add('lunge') }
+  burst(.5,.55,'#FFD97A',44,6); hitstop(120); buzz([26,40,26,40]);
+  [880,1174,1568].forEach((f,i)=>setTimeout(()=>beep(f,.13,'triangle',.06),i*80));
+  st.classList.remove('flash'); void st.offsetWidth; st.classList.add('flash');
+  floater('-'+dmg,'#FFD97A','left');
+  $('hpFoe').style.width=F.hpFoe+'%';
+  setTimeout(()=>$('ghFoe').style.width=F.hpFoe+'%',10);
+  logEvent('counter',{ms:dmg});
+  setTimeout(()=>then&&then(), 760);
+}
+
+/* ============================================================
+   WHAT THE FIGHTER DOES AFTER YOU BLOCK HIM
+   This is where a power stops being a caption. The Twins really do throw
+   the blow again; the Third Fist really does arrive after you thought it
+   was over; the Tails really do come one after another. Every follow-up
+   is queued as an ordinary round, so none of it can desynchronise the
+   fight or the model — it is the same engine, asked again.
+   ============================================================ */
+function traitFollowUp(a,b,outcome){
+  if(!F||F.over) return;
+  const T=F.traitDef; if(!T) return;
+  if(outcome==='equivalent') return;      /* he does not press an unearned win */
+  if(F.i>=F.total-1) return;              /* never overrun the end of the fight */
+
+  /* the champion puts on someone else's trait for the next round */
+  if(F.rotate && F.rotate.length){
+    /* he throws each of the other nine fighters' attacks in turn, so no two
+       rounds against him are the same fight */
+    const k=F.rotate[(F.i+1)%F.rotate.length];
+    F.traitKey=k;
+    F.traitDef=Object.assign({}, TRAITS[k], {rotate:true, shuffle:true, say:null});
+    F.twinned=false; F.extraDone=false; F.salvoDone=false; F.splitTaught=false;
+    toast('הָאַלּוּף לוֹקֵחַ אֶת הַמַּכָּה שֶׁל '+(FOES.find(f=>f.trait===k)||{name:'מִישֶׁהוּ'}).name);
+  }
+  /* the masked fighter swaps his face on every hit */
+  if(T.faces){
+    const pool=FOES.filter(f=>ART[f.key]).map(f=>f.key);
+    if(pool.length){ F.face=(F.face+1)%pool.length;
+      const img=$('figFoe'); if(img) img.src=ART[pool[F.face]]||img.src }
+  }
+  /* the twins throw the same blow a second time, and it is worth more */
+  if(T.twice && !F.twinned){
+    F.twinned=true;
+    F.pending.push({a,b,mode:'build',extra:'twin'});
+    banner('שׁוּב!');
+    return;
+  }
+  /* the third fist: one more group of the same size, arriving late */
+  if(T.extraGroup && !F.extraDone && F.i<F.total-2){
+    F.extraDone=true;
+    const other=Math.min(a,b);
+    F.pending.push({a:1, b:other, mode:'build', extra:'third'});
+    return;
+  }
+  /* six muscles do not stop between blows */
+  if(T.salvo && !F.salvoDone){
+    F.salvoDone=true;
+    const room=Math.max(0, F.total-F.i-2);
+    const n=Math.min(T.salvo-1, room);
+    for(let i=0;i<n;i++){
+      const c=pick(F.last); if(!c) break;
+      F.pending.push({a:c[0], b:c[1], mode:'repair', extra:'salvo'});
+    }
+  }
 }
 /* the 2x6 the child drew slides apart and re-lands as 3 rows of 4 — the
    correction is shown, not asserted */
