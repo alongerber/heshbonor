@@ -6,7 +6,7 @@
    the network is gone; assets are served from the cache first
    because they never change without changing their name.
    ============================================================ */
-const C = 'zirat-v16';
+const C = 'zirat-v18';
 
 /* the shell only — art, fonts and Morris's voice are warmed after
    activation, one file at a time, so a single bad file cannot fail
