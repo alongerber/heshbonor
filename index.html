@@ -1,0 +1,2434 @@
+<!doctype html><html lang="he" dir="rtl"><head>
+<meta charset="utf-8">
+<title>זירת הכפל</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#080A11"><meta name="color-scheme" content="dark">
+<meta name="description" content="משחק קרב בעברית מנוקדת ללימוד לוח הכפל. עשרה יריבים, כל אחד שומר על חתיכה מהחגורה. הכפל עצמו הוא הפעולה — בונים מגן בגודל ההתקפה. בלי לחץ של זמן.">
+<link rel="canonical" href="https://heshbon-or.netlify.app/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="זירת הכפל">
+<meta property="og:url" content="https://heshbon-or.netlify.app/">
+<meta property="og:title" content="זירת הכפל — לוח הכפל כמשחק קרב">
+<meta property="og:description" content="משחק קרב בעברית מנוקדת ללימוד לוח הכפל. עשרה יריבים, כל אחד שומר על חתיכה מהחגורה. הכפל עצמו הוא הפעולה — בונים מגן בגודל ההתקפה. בלי לחץ של זמן.">
+<meta property="og:image" content="https://heshbon-or.netlify.app/og-v2.jpg">
+<meta property="og:image:secure_url" content="https://heshbon-or.netlify.app/og-v2.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="חגורת אלוף מתפוצצת לעשר חתיכות זהב מעל זירת קרב">
+<meta property="og:locale" content="he_IL">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="זירת הכפל — לוח הכפל כמשחק קרב">
+<meta name="twitter:description" content="הכפל עצמו הוא הפעולה. מנוקד, מוקרא בקול, ובלי לחץ של זמן.">
+<meta name="twitter:image" content="https://heshbon-or.netlify.app/og-v2.jpg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="זירת הכפל">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preload" as="font" type="font/woff2" href="/fonts/SuezOne.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/Rubik.woff2" crossorigin>
+<style>
+/* fonts are embedded, so the game has no external dependency at all —
+   first load works on a plane, and niqqud never falls back to a system font
+   that cannot draw it */
+@font-face{font-family:'Suez One';font-weight:400;font-style:normal;font-display:block;
+  src:url(fonts/SuezOne.woff2) format('woff2')}
+@font-face{font-family:'Rubik';font-weight:300 900;font-style:normal;font-display:block;
+  src:url(fonts/Rubik.woff2) format('woff2-variations'),
+      url(fonts/Rubik.woff2) format('woff2')}
+@font-face{font-family:'Chivo Mono';font-weight:200 900;font-style:normal;font-display:block;
+  src:url(fonts/ChivoMono.woff2) format('woff2-variations'),
+      url(fonts/ChivoMono.woff2) format('woff2')}
+
+:root{
+  direction:rtl;
+  --canvas:#080A11; --canvas-2:#10131C; --panel:#141926;
+  --rope:#242C3D; --rope-hi:#38445E;
+  --chalk:#EAEDF6; --chalk-2:#AEB6CA; --faint:#6C7691;
+  --gold:#F5B93B; --gold-hi:#FFD97A;
+  --red:#E8123C; --red-hi:#FF4A66;
+  --blue:#2E6BFF; --blue-hi:#79A6FF;
+  --mint:#3DDC84; --mint-hi:#7DF5B0;
+  --f-display:'Suez One','Rubik',system-ui,sans-serif;
+  --f-body:'Rubik',system-ui,sans-serif;
+  --f-num:'Chivo Mono',ui-monospace,monospace;
+  /* one light source, top-left — every surface obeys it */
+  --lift:inset 0 1px 0 rgba(255,255,255,.07);
+  --drop:0 10px 28px rgba(0,0,0,.55);
+  --drop-sm:0 4px 14px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* a class rule beats the hidden attribute's default display:none, and every
+   overlay here is toggled with .hidden — so this line has to win */
+[hidden]{display:none!important}
+body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-body);
+  overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(760px 420px at 50% -12%, rgba(245,185,59,.10), transparent 64%),
+    radial-gradient(1100px 620px at 82% -6%, rgba(232,18,60,.17), transparent 62%),
+    radial-gradient(900px 560px at 10% 108%, rgba(46,107,255,.16), transparent 60%),
+    var(--canvas)}
+/* vignette pulls the eye to the middle; the grain stops the flat-gradient look */
+.bg::after{content:"";position:absolute;inset:0;
+  background:radial-gradient(120% 90% at 50% 45%, transparent 42%, rgba(0,0,0,.55) 100%)}
+.grain{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+.app{position:relative;z-index:1}
+.screen{display:none;min-height:100dvh}
+.screen.on{display:block}
+.num{font-family:var(--f-num);direction:ltr;unicode-bidi:isolate;font-weight:700}
+.btn{display:block;width:100%;border:0;border-radius:16px;padding:16px;
+  font-family:var(--f-display);font-weight:400;font-size:20px;letter-spacing:.01em;color:#0A0C12;
+  background:var(--chalk);cursor:pointer;position:relative;
+  transition:transform .1s cubic-bezier(.2,1,.3,1),box-shadow .1s;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 5px 0 rgba(0,0,0,.35),var(--drop)}
+.btn:active{transform:translateY(4px);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 1px 0 rgba(0,0,0,.35)}
+.btn.primary{background:linear-gradient(180deg,#FFE49A,var(--gold-hi) 42%,var(--gold));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65),0 5px 0 #A87A15,
+    0 12px 34px rgba(245,185,59,.34)}
+.btn.primary:active{box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 1px 0 #A87A15,
+  0 6px 18px rgba(245,185,59,.28)}
+.btn.ghost{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.01));
+  border:1.5px solid var(--rope-hi);color:var(--chalk);
+  font-family:var(--f-body);font-weight:700;font-size:15px;
+  box-shadow:var(--lift),0 3px 0 rgba(0,0,0,.3)}
+.btn.ghost:active{box-shadow:var(--lift),0 0 0 rgba(0,0,0,.3)}
+.btn:disabled{opacity:.4}
+.iconbtn{width:42px;height:42px;border-radius:13px;border:1px solid var(--rope-hi);
+  background:linear-gradient(180deg,var(--panel),var(--canvas-2));
+  color:var(--chalk-2);font-size:18px;cursor:pointer;display:grid;place-items:center;
+  box-shadow:var(--lift),var(--drop-sm)}
+.iconbtn:active{transform:translateY(2px)}
+
+/* ===================== TITLE ===================== */
+#title{background:#04050A;position:relative;overflow:hidden;height:100dvh}
+#ttlFx{position:absolute;inset:0;z-index:1}
+.ttl{position:relative;z-index:2;height:100dvh;display:grid;place-items:center;text-align:center}
+.ttl-belt{width:min(46vw,190px);opacity:0;transform:scale(.4);
+  filter:drop-shadow(0 0 60px rgba(245,185,59,.85))}
+.ttl-belt.in{animation:beltIn .7s cubic-bezier(.2,1.4,.4,1) forwards}
+.ttl-belt.crack{animation:beltCrack .5s forwards}
+@keyframes beltIn{to{opacity:1;transform:scale(1)}}
+@keyframes beltCrack{0%{opacity:1;transform:scale(1)}
+  30%{transform:scale(1.22) rotate(-4deg)}100%{opacity:0;transform:scale(2.6) rotate(9deg)}}
+.ttl-logo{font-family:var(--f-display);font-weight:400;font-size:clamp(42px,14vw,72px);
+  text-shadow:0 6px 40px rgba(245,185,59,.28);
+  margin:16px 0 0;opacity:0;transform:translateY(20px);letter-spacing:-.01em}
+.ttl-logo em{font-style:normal;color:var(--gold)}
+.ttl-logo.in{animation:upIn .55s cubic-bezier(.2,1,.3,1) forwards}
+.ttl-sub{margin-top:8px;font-size:14px;color:var(--faint);font-weight:700;opacity:0}
+.ttl-sub.in{animation:upIn .5s forwards}
+.ttl-tap{margin-top:34px;font-size:13px;color:var(--gold);font-weight:900;opacity:0}
+.ttl-tap.in{animation:upIn .5s forwards,blink 1.7s 1s infinite}
+@keyframes upIn{to{opacity:1;transform:none}}
+@keyframes blink{50%{opacity:.35}}
+.shockring{position:absolute;top:50%;left:50%;width:20px;height:20px;margin:-10px 0 0 -10px;
+  border:2px solid var(--gold);border-radius:50%;opacity:0}
+.shockring.go{animation:ring 1s ease-out forwards}
+@keyframes ring{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(26)}}
+
+/* ===================== ARENA (the only home) ===================== */
+#home{height:100dvh;overflow:hidden;position:relative}
+.homewrap{display:flex;flex-direction:column;height:100dvh;max-width:520px;margin:0 auto;
+  width:100%;padding:max(12px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+.hometop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.beltbits{display:flex;gap:4px}
+.beltbits i{width:14px;height:7px;border-radius:2px;background:rgba(255,255,255,.07);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.beltbits i.got{background:var(--gold);box-shadow:0 0 9px rgba(245,185,59,.75)}
+.homestage{flex:1;position:relative;min-height:0}
+.homestage::after{content:"";position:absolute;left:50%;bottom:6%;transform:translateX(-50%);
+  width:104%;height:34%;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%, rgba(245,185,59,.16), transparent 70%);
+  filter:blur(4px)}
+.homestage img{position:absolute;bottom:8%;height:min(46vh,340px);width:auto;object-fit:contain;z-index:2}
+.homestage .shadow{position:absolute;bottom:7%;height:16px;border-radius:50%;z-index:1;
+  background:radial-gradient(50% 50%, rgba(0,0,0,.75), transparent 72%);filter:blur(3px)}
+.hs-me{right:2%;transform:scaleX(-1);filter:drop-shadow(0 18px 30px rgba(0,0,0,.8))}
+.hs-foe{left:0%;filter:brightness(.1) contrast(1.6) drop-shadow(0 0 30px rgba(232,18,60,.55));
+  animation:foeBreathe 3.4s ease-in-out infinite}
+.hs-foe.known{filter:none;animation:foeBreathe 3.4s ease-in-out infinite}
+@keyframes foeBreathe{50%{transform:translateY(-8px) scale(1.02)}}
+.hs-name{position:absolute;top:6%;left:0;right:0;text-align:center}
+.hs-name b{display:block;font-family:var(--f-display);font-weight:400;
+  font-size:clamp(26px,8vw,38px);color:var(--chalk);letter-spacing:-.005em;
+  text-shadow:0 2px 18px rgba(0,0,0,.9)}
+.hs-name span{display:block;margin-top:4px;font-size:13px;color:var(--red-hi);font-weight:900}
+.hs-floor{position:absolute;top:1%;left:0;right:0;text-align:center;
+  font-size:11.5px;color:var(--faint);font-weight:900;letter-spacing:.12em}
+.homefoot{padding-top:8px}
+.saidby{display:flex;align-items:center;gap:10px;margin-bottom:11px;border-radius:16px;padding:11px 13px;
+  background:linear-gradient(180deg,var(--panel),var(--canvas-2));
+  border:1px solid var(--rope-hi);box-shadow:var(--lift),var(--drop-sm)}
+.saidby img{width:42px;height:42px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--gold);flex:none}
+.saidby p{margin:0;font-size:15.5px;font-weight:600;line-height:1.5;color:var(--chalk)}
+
+/* drawer */
+.drawer{position:fixed;inset:0;z-index:50;background:rgba(4,5,10,.75);
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.drawer.on{opacity:1;pointer-events:auto}
+.drawer .sheet{position:absolute;inset:auto 0 0 0;background:var(--panel);
+  border-radius:22px 22px 0 0;border-top:1px solid var(--rope-hi);padding:18px 16px 26px;
+  max-width:520px;margin:0 auto;transform:translateY(100%);transition:transform .26s cubic-bezier(.2,1,.3,1);
+  max-height:86dvh;overflow:auto}
+.drawer.on .sheet{transform:none}
+.drawer h3{font-family:var(--f-display);font-weight:400;font-size:20px;margin:0 0 12px}
+.drow{display:flex;align-items:center;gap:12px;width:100%;text-align:right;
+  background:linear-gradient(180deg,var(--panel),var(--canvas-2));
+  border:1px solid var(--rope-hi);border-radius:14px;
+  padding:12px;margin-bottom:8px;color:var(--chalk);cursor:pointer;box-shadow:var(--lift)}
+.drow .di{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  background:rgba(245,185,59,.1);border:1px solid rgba(245,185,59,.25);color:var(--gold);
+  font-size:17px;flex:none}
+.drow b{display:block;font-size:15px}
+.drow small{display:block;font-size:12.5px;color:var(--faint);margin-top:1px;line-height:1.35}
+
+/* ===================== FIGHT ===================== */
+#fight{height:100dvh;overflow:hidden}
+.fw{display:flex;flex-direction:column;height:100dvh;max-width:520px;margin:0 auto;width:100%;
+  padding:max(10px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom))}
+.hud{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.hp{display:flex;flex-direction:column;gap:4px;min-width:0}
+.hp .nm{font-size:11.5px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp .track{height:13px;border-radius:4px;background:#0A0D15;border:1px solid var(--rope-hi);
+  overflow:hidden;position:relative;box-shadow:inset 0 2px 5px rgba(0,0,0,.85)}
+/* ticks read as segments of health, not a smooth percentage */
+.hp .track::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0 9px,rgba(0,0,0,.55) 9px 11px)}
+.hp .track i{position:absolute;inset:0 auto 0 0;height:100%;z-index:2;
+  transition:width .24s cubic-bezier(.2,.9,.3,1)}
+.hp .track u{position:absolute;top:0;bottom:0;width:100%;background:rgba(255,255,255,.7);
+  transition:width .5s .25s ease-out;z-index:1}
+.hp.me .nm{color:var(--blue-hi)} .hp.me .track u{inset:0 0 0 auto}
+.hp.me .track i{background:linear-gradient(180deg,#8FC0FF,#2E6BFF 45%,#14357F);inset:0 0 0 auto;
+  box-shadow:0 0 12px rgba(121,166,255,.5)}
+.hp.foe .nm{color:var(--red-hi);text-align:left} .hp.foe .track u{inset:0 auto 0 0}
+.hp.foe .track i{background:linear-gradient(180deg,#FF8FA0,#E8123C 45%,#8E0B24);
+  box-shadow:0 0 12px rgba(255,74,102,.5)}
+.hud .mid{text-align:center;min-width:58px}
+.hud .vs{font-family:var(--f-display);font-size:11px;color:var(--faint);letter-spacing:.1em}
+.hud .sc{font-size:19px;font-weight:700;color:var(--gold);line-height:1.1;transition:transform .15s}
+.hud .sc.bump{transform:scale(1.3)}
+
+.stage{position:relative;flex:1 1 auto;min-height:92px;max-height:230px;margin-top:6px}
+#fx{position:absolute;inset:0;z-index:5;pointer-events:none}
+.stage::before{content:"";position:absolute;left:0;right:0;bottom:0;height:44%;z-index:1;
+  pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.5)),
+    radial-gradient(70% 120% at 50% 108%, rgba(245,185,59,.13), transparent 68%)}
+.stage img{position:absolute;bottom:0;height:100%;width:auto;object-fit:contain;z-index:2;
+  filter:drop-shadow(0 12px 22px rgba(0,0,0,.75))}
+.stage{border-radius:16px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,255,255,.02),transparent 40%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+.stage.flash{animation:bloom .4s}
+@keyframes bloom{0%{filter:brightness(2.1) saturate(1.4)}100%{filter:none}}
+.f-me{right:-2%;transform:scaleX(-1)}
+.f-foe{left:-2%}
+.stage.hit-foe .f-foe{animation:recoilL .32s}
+.stage.hit-me  .f-me{animation:recoilR .32s}
+@keyframes recoilL{0%{transform:translateX(0)}25%{transform:translateX(-16px) rotate(-5deg)}100%{transform:none}}
+@keyframes recoilR{0%{transform:scaleX(-1) translateX(0)}25%{transform:scaleX(-1) translateX(-16px) rotate(-5deg)}100%{transform:scaleX(-1)}}
+.shake{animation:shake .34s}
+@keyframes shake{0%,100%{transform:none}20%{transform:translate(-7px,3px)}
+  45%{transform:translate(6px,-3px)}70%{transform:translate(-4px,-2px)}}
+
+/* the incoming attack — a number flying at you */
+.incoming{position:absolute;top:14%;left:50%;transform:translateX(-50%);z-index:6;
+  display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none}
+.incoming .lab{font-size:11px;font-weight:900;color:var(--red-hi);letter-spacing:.08em}
+.incoming .n{font-family:var(--f-num);font-size:46px;font-weight:700;color:#fff;
+  text-shadow:0 0 22px rgba(232,18,60,.95),0 4px 0 rgba(0,0,0,.5);direction:ltr}
+.incoming.charge .n{animation:pulseN .7s ease-in-out infinite}
+@keyframes pulseN{50%{transform:scale(1.12)}}
+.chargebar{width:min(220px,64vw);height:8px;border-radius:99px;background:#0C1019;
+  border:1px solid var(--rope);overflow:hidden;margin-top:4px}
+.chargebar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--red));
+  transition:width .1s linear}
+
+/* ===================== THE GRID — multiplication IS the move ===================== */
+.gridpane{flex:0 0 auto;display:flex;flex-direction:column;justify-content:flex-start;
+  min-height:0;padding:6px 0 2px}
+.gridhead{display:flex;align-items:center;justify-content:space-between;
+  padding:0 2px 7px;gap:10px}
+.gridhead .want{font-size:13px;font-weight:900;color:var(--chalk-2)}
+.gridhead .want b{color:var(--gold-hi);font-family:var(--f-num);direction:ltr;
+  unicode-bidi:isolate;font-size:17px}
+.gridhead .have{font-size:13px;font-weight:900;color:var(--faint)}
+.gridhead .have b{color:var(--mint);font-family:var(--f-num);direction:ltr;
+  unicode-bidi:isolate;font-size:17px}
+
+.gridwrap{position:relative;margin:0 auto;touch-action:none}
+/* A shield is not a blanket of squares — it is built from identical strips,
+   one per group. The wide gap between rows is the whole point: "2 כפול 2"
+   has to LOOK like two groups of two before it can mean it. */
+.grid{position:relative;display:grid;column-gap:3px;row-gap:var(--rg,11px);
+  direction:ltr;border-radius:14px;padding:6px;
+  background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(0,0,0,.25));
+  box-shadow:inset 0 2px 10px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.05),var(--drop)}
+.cell{border-radius:6px;position:relative;transition:background .12s,box-shadow .12s;
+  background:linear-gradient(180deg,#151C2C,#0D1220);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),inset 0 0 0 1px rgba(255,255,255,.03)}
+/* a locked piece is a plate bolted onto the shield */
+.cell.locked{background:linear-gradient(180deg,#5BE49B,#2A7B52 45%,#1A5237);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -2px 5px rgba(0,0,0,.35),
+    0 0 12px rgba(61,220,132,.32)}
+.cell.drag{background:linear-gradient(180deg,#FFD97A,#C79420 45%,#7A5A11);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 5px rgba(0,0,0,.3),
+    0 0 14px rgba(245,185,59,.42)}
+.cell.bad{background:linear-gradient(180deg,#FF6A82,#A5122E 45%,#5E0A1A);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 0 14px rgba(232,18,60,.45)}
+.cell.tick{animation:tickPop .3s backwards}
+@keyframes tickPop{0%{transform:scale(.3);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+.gridlbl{position:absolute;z-index:4;font-family:var(--f-num);font-size:12.5px;font-weight:700;
+  max-width:100%;
+  box-shadow:0 2px 8px rgba(0,0,0,.6);border:1px solid rgba(245,185,59,.35);
+  color:var(--gold-hi);direction:ltr;pointer-events:none;
+  background:rgba(8,10,17,.9);border-radius:7px;padding:1px 6px;white-space:nowrap}
+.readout.words{flex-direction:column;gap:2px;font-family:var(--f-body);
+  font-size:clamp(16px,4.8vw,20px);font-weight:900;direction:rtl;text-align:center}
+.readout.words small{font-family:var(--f-num);font-size:14px;direction:ltr;
+  unicode-bidi:isolate;font-weight:700}
+/* the sum sits under the shape it describes — never on top of the
+   squares the child is trying to look at */
+/* The slot is always in the layout. Without it, the sum appearing mid-drag
+   grew the panel and slid the board out from under the child's finger. */
+.readslot{height:clamp(30px,5vh,46px);display:flex;align-items:center;justify-content:center;
+  margin-top:7px;overflow:hidden;flex:0 0 auto}
+.readout{width:fit-content;max-width:100%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-num);font-size:clamp(22px,7vw,32px);font-weight:700;color:#fff;
+  direction:ltr;pointer-events:none;text-shadow:0 3px 14px rgba(0,0,0,.95);
+  background:rgba(8,10,17,.82);border:1px solid var(--rope-hi);border-radius:12px;padding:5px 13px}
+.piecelist{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:9px;min-height:26px}
+.piece{font-family:var(--f-num);font-size:13px;font-weight:700;direction:ltr;
+  background:rgba(61,220,132,.12);border:1px solid rgba(61,220,132,.4);color:var(--mint-hi);
+  border-radius:99px;padding:4px 11px;animation:pop .3s backwards}
+.piece.plus{background:none;border:none;color:var(--faint);padding:4px 0}
+@keyframes pop{0%{transform:scale(.5);opacity:0}55%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+.gridfoot{display:flex;gap:8px;padding-top:9px}
+.gridfoot .btn{flex:1;padding:13px;font-size:16px}
+.hint{text-align:center;font-size:12.5px;color:var(--faint);font-weight:700;padding-top:7px;
+  line-height:1.4}
+
+/* demo overlay — shown before ever demanded */
+.demo{position:absolute;inset:0;z-index:20;background:#060810;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+.demo .dtag{font-size:12px;font-weight:900;letter-spacing:.14em;color:var(--gold)}
+.demo .dline{font-family:var(--f-display);font-weight:400;text-align:center;
+  font-size:clamp(19px,5.6vw,25px);line-height:1.4;color:var(--chalk);text-wrap:balance;
+  min-height:2.8em;display:grid;place-items:center}
+.demo .dline b{color:var(--gold)}
+.demo .dcount{font-family:var(--f-num);font-size:clamp(26px,9vw,38px);font-weight:700;
+  color:var(--mint);direction:ltr;min-height:1.2em}
+
+
+.floater{position:absolute;z-index:8;font-family:var(--f-num);font-size:25px;font-weight:700;
+  direction:ltr;unicode-bidi:isolate;pointer-events:none;animation:floatUp 1s forwards;
+  text-shadow:0 0 12px rgba(0,0,0,1),0 2px 4px rgba(0,0,0,1);
+  -webkit-text-stroke:.6px rgba(0,0,0,.6)}
+@keyframes floatUp{0%{opacity:0;transform:translateY(10px) scale(.7)}
+  25%{opacity:1;transform:translateY(-6px) scale(1.12)}100%{opacity:0;transform:translateY(-46px)}}
+.banner{position:absolute;inset:auto 0 auto 0;top:38%;z-index:9;text-align:center;
+  padding:10px 0;
+  background:radial-gradient(120% 100% at 50% 50%, rgba(4,5,10,.88) 40%, transparent 78%);
+  font-family:var(--f-display);font-weight:400;font-size:clamp(30px,10vw,44px);color:#fff;
+  -webkit-text-stroke:1px rgba(0,0,0,.35);
+  text-shadow:0 0 26px rgba(232,18,60,.9);animation:slam .3s,fadeaway .35s 1.2s forwards;
+  pointer-events:none}
+@keyframes slam{from{opacity:0;transform:scale(2.4)}to{opacity:1;transform:scale(1)}}
+@keyframes fadeaway{to{opacity:0}}
+.koflash{position:fixed;inset:0;z-index:70;background:#fff;pointer-events:none;
+  animation:kof .75s forwards}
+@keyframes kof{0%{opacity:.92}100%{opacity:0}}
+
+/* ===================== RESULT ===================== */
+.res{max-width:520px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 18px 26px;
+  min-height:100dvh;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.res h1{font-family:var(--f-display);font-weight:400;font-size:clamp(36px,12vw,54px);
+  text-align:center;margin:0;text-shadow:0 4px 30px rgba(0,0,0,.8)}
+.res .sub{text-align:center;font-size:15px;color:var(--chalk-2);font-weight:700;margin:0}
+.res .clue{background:linear-gradient(160deg,rgba(245,185,59,.13),rgba(245,185,59,.03));
+  border:1px solid rgba(245,185,59,.4);border-radius:18px;padding:16px}
+.res .clue span{font-size:11px;font-weight:900;letter-spacing:.13em;color:var(--gold)}
+.res .clue p{margin:6px 0 0;font-size:17px;font-weight:700;line-height:1.45}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:linear-gradient(180deg,var(--panel),var(--canvas-2));
+  border:1px solid var(--rope-hi);border-radius:14px;padding:12px 8px;text-align:center;
+  box-shadow:var(--lift),var(--drop-sm)}
+.stat span{display:block;font-size:11px;color:var(--faint);font-weight:900}
+.stat b{display:block;font-family:var(--f-num);font-size:20px;color:var(--chalk);margin-top:3px;
+  direction:ltr;unicode-bidi:isolate}
+.learned{background:var(--canvas-2);border:1px solid var(--rope);border-radius:16px;padding:13px}
+.learned h4{margin:0 0 8px;font-size:13px;color:var(--faint);font-weight:900}
+.lrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;
+  border-bottom:1px solid rgba(255,255,255,.04);font-size:14px;font-weight:700}
+.lrow:last-child{border:0}
+.lrow .f{font-family:var(--f-num);direction:ltr;unicode-bidi:isolate}
+.lrow .t{font-size:12.5px}
+
+/* ===================== PARENT ===================== */
+#parent{direction:rtl}
+.pwrap{max-width:520px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 28px}
+.pwrap h2{font-family:var(--f-display);font-weight:400;font-size:24px;margin:6px 0 2px}
+.pwrap .lead{font-size:14px;color:var(--chalk-2);line-height:1.5;margin:0 0 14px}
+.mat{display:grid;grid-template-columns:20px repeat(9,1fr);gap:3px;direction:ltr;margin-top:10px}
+.mat .h{font-family:var(--f-num);font-size:10px;color:var(--faint);text-align:center;
+  align-self:center}
+.mat .c{aspect-ratio:1;border-radius:4px;background:#161C2A}
+.mat .c.l1{background:#4A1020} .mat .c.l2{background:#7A1024}
+.mat .c.l3{background:#1B4FD1} .mat .c.l4{background:#2A8F5A} .mat .c.l5{background:#3DDC84}
+.legend{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:10px;
+  font-size:11.5px;color:var(--chalk-2);font-weight:700}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-inline-end:4px}
+.plist{background:var(--canvas-2);border:1px solid var(--rope);border-radius:16px;
+  padding:6px 13px;margin-top:14px}
+.prow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;
+  border-bottom:1px solid rgba(255,255,255,.05);font-size:14px}
+.prow:last-child{border:0}
+.prow b{font-family:var(--f-num);direction:ltr;unicode-bidi:isolate;font-size:15px}
+.tiers{margin-top:14px}
+.tier{display:flex;align-items:center;gap:10px;background:var(--canvas-2);
+  border:1px solid var(--rope);border-radius:14px;padding:11px 13px;margin-bottom:7px}
+.tier .tn{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  font-family:var(--f-num);font-weight:700;font-size:13px;flex:none}
+.tier.done .tn{background:rgba(61,220,132,.15);border:1px solid var(--mint);color:var(--mint)}
+.tier.now .tn{background:rgba(245,185,59,.15);border:1px solid var(--gold);color:var(--gold)}
+.tier.wait .tn{background:var(--panel);border:1px solid var(--rope);color:var(--faint)}
+.tier b{display:block;font-size:14px}
+.tier small{display:block;font-size:12px;color:var(--faint);margin-top:1px}
+.tier .bar{flex:1;height:6px;border-radius:99px;background:#0C1019;overflow:hidden}
+.tier .bar i{display:block;height:100%;background:var(--mint)}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:80;
+  background:var(--canvas-2);border:1px solid var(--rope-hi);border-radius:99px;
+  padding:10px 18px;font-size:14px;font-weight:700;opacity:0;transition:opacity .25s,transform .25s;
+  pointer-events:none;max-width:88vw;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
+.txtbtn{background:none;border:0;color:var(--faint);font-size:14px;font-weight:700;
+  cursor:pointer;padding:8px 4px;font-family:var(--f-body)}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.08s!important}}
+
+/* ===================== WHO AM I ===================== */
+.picks{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 4px}
+.pk{background:linear-gradient(180deg,var(--panel),var(--canvas-2));border:2px solid var(--rope);
+  border-radius:20px;padding:12px 8px 10px;cursor:pointer;color:var(--chalk);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  box-shadow:var(--lift),var(--drop-sm);transition:transform .12s,border-color .12s}
+.pk img{height:min(30vh,210px);width:auto;object-fit:contain;
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.7))}
+.pk span{font-family:var(--f-display);font-size:17px}
+.pk.on{border-color:var(--gold);box-shadow:var(--lift),0 0 0 3px rgba(245,185,59,.22),var(--drop)}
+.pk:active{transform:scale(.98)}
+
+/* ===================== WAREHOUSE ===================== */
+.whwrap{display:flex;flex-direction:column;gap:14px;justify-content:center;
+  min-height:100dvh;max-width:520px;
+  margin:0 auto;width:100%;padding:max(14px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+.whtop{display:flex;justify-content:flex-end;position:absolute;top:max(12px,env(safe-area-inset-top));
+  left:16px;right:16px}
+.whtask{text-align:center;font-size:15px;font-weight:700;color:var(--chalk-2);min-height:26px}
+.whtask b{font-family:var(--f-num);color:var(--gold-hi);font-size:19px;direction:ltr;unicode-bidi:isolate}
+.whEq{font-size:clamp(26px,8vw,36px);color:var(--mint);font-weight:700;
+  direction:ltr;unicode-bidi:isolate;display:inline-block;animation:pop .4s}
+.crates{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.crate{border:2px dashed var(--rope-hi);border-radius:14px;padding:9px 7px 7px;
+  display:flex;flex-direction:column;align-items:center;gap:7px;position:relative;
+  background:rgba(255,255,255,.02);transition:border-color .2s,background .2s}
+.crate.now{border-color:var(--gold);background:rgba(245,185,59,.07)}
+.crate.done{border-style:solid;border-color:var(--mint);background:rgba(61,220,132,.09)}
+.crate .clab{font-size:15px;color:var(--faint);font-weight:700}
+.crate.done .clab{color:var(--mint)}
+.crate .slots{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.crate .slots i{width:min(30px,7.6vw);height:min(30px,7.6vw);border-radius:7px;background:#0D1220;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.7)}
+.crate .slots i.full{background:linear-gradient(180deg,#FFE49A,var(--gold) 45%,#8A6413);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 0 10px rgba(245,185,59,.5);
+  animation:pop .3s}
+.pilewrap{margin-top:2px}
+.pilelbl{display:block;font-size:12px;color:var(--faint);font-weight:900;
+  text-align:center;margin-bottom:7px;letter-spacing:.08em}
+.pile{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.shard{width:min(38px,9.5vw);height:min(38px,9.5vw);border-radius:9px;border:0;cursor:pointer;
+  background:linear-gradient(180deg,#FFE49A,var(--gold) 45%,#8A6413);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 3px 0 #6E4F10,0 6px 14px rgba(0,0,0,.5);
+  transition:transform .12s,opacity .25s}
+.shard:active{transform:translateY(3px)}
+.shard.gone{opacity:0;transform:scale(.4);pointer-events:none}
+
+/* ===================== STORY ===================== */
+.stwrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  min-height:100dvh;max-width:520px;margin:0 auto;width:100%;
+  padding:max(16px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom))}
+.stimg{height:min(34vh,260px);display:flex;align-items:center;justify-content:center;
+  width:100%;overflow:hidden;flex:0 0 auto}
+.stimg img{max-height:100%;max-width:80%;object-fit:contain;
+  filter:drop-shadow(0 14px 30px rgba(0,0,0,.8));animation:stIn .55s cubic-bezier(.2,1,.3,1)}
+@keyframes stIn{from{opacity:0;transform:scale(.82) translateY(14px)}to{opacity:1;transform:none}}
+.sttxt{margin:0;text-align:center;font-family:var(--f-display);font-weight:400;
+  font-size:clamp(21px,6.4vw,27px);line-height:1.45;text-wrap:balance;min-height:3.2em;
+  display:grid;place-items:center}
+.sttxt b{color:var(--gold)}
+.stdots{display:flex;gap:7px}
+.stdots i{width:22px;height:4px;border-radius:99px;background:var(--rope)}
+.stdots i.on{background:var(--gold)}
+
+/* ===================== OBJECTIVE + READY ===================== */
+.objective:empty{display:none}
+.objective{text-align:center;font-size:15px;font-weight:700;line-height:1.4;
+  color:var(--chalk);background:rgba(245,185,59,.09);border:1px solid rgba(245,185,59,.28);
+  border-radius:12px;padding:8px 12px;margin-bottom:9px}
+.objective b{color:var(--gold-hi);font-family:var(--f-num);direction:ltr;unicode-bidi:isolate}
+/* the slot is always in the layout, so the grid never resizes mid-turn */
+.readyslot{min-height:62px;display:flex;align-items:center;margin-top:9px}
+.readyslot .btn{width:100%}
+.fw{overflow-y:auto;overflow-x:hidden}
+/* the outline a child traces on the middle rung */
+.cell.target{background:linear-gradient(180deg,#2A3550,#141B2B);
+  box-shadow:inset 0 0 0 2px var(--gold),inset 0 1px 0 rgba(255,255,255,.15);
+  animation:pulseT 1.3s ease-in-out infinite}
+@keyframes pulseT{50%{box-shadow:inset 0 0 0 2px var(--gold-hi),0 0 14px rgba(245,185,59,.4)}}
+.ghosthand{position:absolute;z-index:9;width:30px;height:30px;border-radius:50%;
+  border:2px solid #fff;background:rgba(255,255,255,.22);pointer-events:none;
+  box-shadow:0 0 16px rgba(255,255,255,.6)}
+/* the two halves of a worked split must not look the same */
+.cell.pA{background:linear-gradient(180deg,#5BE49B,#2A7B52 45%,#1A5237)}
+.cell.pB{background:linear-gradient(180deg,#8FC0FF,#2E6BFF 45%,#14357F)}
+
+/* the child decides when a demonstration is over — never a timer */
+.democtl{display:flex;gap:8px;margin:8px 0 2px}
+.democtl .btn{flex:1;padding:12px;font-size:16px}
+.democtl .btn.ghost{flex:0 0 40%}
+
+/* a way out of a fight — a child who wants to stop must not be trapped */
+.pausebtn{position:absolute;z-index:30;top:max(8px,env(safe-area-inset-top));
+  inset-inline-start:10px;width:34px;height:34px;border-radius:10px;
+  border:1px solid var(--rope-hi);background:rgba(16,19,28,.82);color:var(--chalk-2);
+  font-size:11px;letter-spacing:1px;cursor:pointer;display:grid;place-items:center;
+  box-shadow:var(--lift),var(--drop-sm);backdrop-filter:blur(3px)}
+.pausebtn:active{transform:translateY(2px)}
+.fw{position:relative}
+.dnote{font-size:12.5px;color:var(--faint);line-height:1.45;margin:2px 2px 12px;text-align:center}
+
+/* an in-app confirmation: browser dialogs are blocked inside a sandboxed frame */
+.confirm h3{margin-bottom:6px}
+.confirm .cmsg{font-size:15px;line-height:1.5;color:var(--chalk-2);margin:0 0 16px}
+.confirm .crow{display:flex;gap:9px}
+.confirm .crow .btn{flex:1}
+.btn.danger{background:linear-gradient(180deg,#FF6A82,var(--red) 45%,#8E0B24);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 5px 0 #6B0A1B,0 12px 30px rgba(232,18,60,.3)}
+.btn.danger:active{box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 0 #6B0A1B}
+
+/* ===================== TAP TO CONTINUE =====================
+   Nothing an adult says to a child should disappear on a timer.
+   Every explanation waits here until the child taps. */
+.tapgate{position:fixed;left:50%;transform:translateX(-50%);
+  bottom:max(18px,env(safe-area-inset-bottom));z-index:60;
+  font-family:var(--f-display);font-size:18px;color:#1b1204;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold));
+  border:0;border-radius:14px;padding:13px 30px;cursor:pointer;
+  box-shadow:0 6px 0 #8a5f13, 0 12px 26px rgba(0,0,0,.5);
+  animation:gateIn .22s ease both}
+@keyframes gateIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}
+  to{opacity:1;transform:translateX(-50%)}}
+.tapgate:active{transform:translateX(-50%) translateY(3px);box-shadow:0 3px 0 #8a5f13}
+
+/* while Morris is demonstrating, the child is not being asked anything —
+   so the buttons that answer a question are not on screen */
+.demoing .gridfoot,.demoing .readyslot{visibility:hidden}
+
+/* rows read as groups, not as one undivided block */
+.grid.grouped .cell.rowend{margin-bottom:9px}
+
+/* ===================== THE PUNCH =====================
+   No clock anywhere in this game, so the tension has to come from the
+   blow itself: he winds up and holds — for as long as the child needs —
+   then throws, and the shield either takes it or does not. */
+.stage .f-foe.charging{animation:windup 1.5s ease-in-out infinite;
+  filter:drop-shadow(0 12px 22px rgba(0,0,0,.75)) drop-shadow(0 0 14px rgba(255,90,110,.5))}
+@keyframes windup{0%,100%{transform:translateX(0) rotate(0)}
+  50%{transform:translateX(-9px) rotate(-3deg)}}
+
+.stage .f-foe.throw{animation:throwL .42s cubic-bezier(.3,1.6,.4,1)}
+@keyframes throwL{0%{transform:translateX(-14px) rotate(-6deg)}
+  38%{transform:translateX(46px) rotate(7deg) scale(1.07)}
+  100%{transform:none}}
+
+/* the fist that crosses the screen and lands on the shield */
+.fist{position:absolute;z-index:8;left:16%;top:46%;font-size:38px;line-height:1;
+  pointer-events:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.8));
+  animation:fistFly .36s cubic-bezier(.35,.1,.5,1) forwards}
+@keyframes fistFly{0%{left:16%;opacity:0;transform:scale(.6)}
+  15%{opacity:1}
+  100%{left:64%;opacity:1;transform:scale(1.25)}}
+
+/* the shield takes the hit — it holds, and you can see it hold */
+.gridwrap.impact{animation:shieldHold .5s}
+@keyframes shieldHold{0%{transform:none}
+  12%{transform:translateX(9px) scale(.965)}
+  30%{transform:translateX(-5px) scale(1.015)}
+  55%{transform:translateX(2px)}100%{transform:none}}
+.grid.lit{animation:shieldLit .5s}
+@keyframes shieldLit{0%{box-shadow:inset 0 2px 10px rgba(0,0,0,.7),0 0 0 0 rgba(245,185,59,.9)}
+  20%{box-shadow:inset 0 2px 10px rgba(0,0,0,.7),0 0 0 7px rgba(245,185,59,.55),0 0 46px rgba(245,185,59,.6)}
+  100%{box-shadow:inset 0 2px 10px rgba(0,0,0,.7),0 0 0 0 rgba(245,185,59,0)}}
+
+/* it did not hold */
+.gridwrap.broke{animation:shieldBreak .55s}
+@keyframes shieldBreak{0%{transform:none;filter:none}
+  10%{transform:translateX(-12px) rotate(-2deg);filter:brightness(1.8) saturate(.3)}
+  28%{transform:translateX(10px) rotate(2deg)}
+  50%{transform:translateX(-6px);filter:none}100%{transform:none}}
+.cell.shatter{animation:cellShatter .45s forwards}
+@keyframes cellShatter{0%{opacity:1;transform:none}
+  100%{opacity:0;transform:translateY(16px) rotate(14deg) scale(.75)}}
+
+</style>
+</head>
+<div class="bg"></div>
+<div class="grain"></div>
+<div class="app">
+
+<!-- ================= TITLE ================= -->
+<section class="screen on" id="title">
+  <canvas id="ttlFx"></canvas>
+  <div class="ttl">
+    <div>
+      <img class="ttl-belt" id="ttlBelt" alt="">
+      <div class="shockring" id="ring1"></div>
+      <div class="shockring" id="ring2"></div>
+      <h1 class="ttl-logo" id="ttlLogo">זִירַת ה<em>כֶּפֶל</em></h1>
+      <div class="ttl-sub" id="ttlSub">עֶשְׂרָה יְרִיבִים · חֲגוֹרָה אַחַת</div>
+      <div class="ttl-tap" id="ttlTap">לְחַץ בְּכָל מָקוֹם</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= NAME (once) ================= -->
+<section class="screen" id="name">
+  <div class="res">
+    <h1>אֵיךְ קוֹרְאִים לְךָ?</h1>
+    <input id="fname" maxlength="12" placeholder="הַשֵּׁם שֶׁלְּךָ"
+      style="width:100%;padding:15px;border-radius:14px;border:1.5px solid var(--rope-hi);
+      background:var(--canvas-2);color:var(--chalk);font-family:var(--f-body);
+      font-size:19px;font-weight:700;text-align:center">
+    <button class="btn primary" id="nameGo">קָדִימָה</button>
+  </div>
+</section>
+
+
+<!-- ================= WHO AM I ================= -->
+<section class="screen" id="pick">
+  <div class="res">
+    <h1>מִי {אַתָּה|אַתְּ} בַּזִּירָה?</h1>
+    <div class="picks">
+      <button class="pk"><img id="pkBoy" alt=""><span>לוֹחֵם</span></button>
+      <button class="pk"><img id="pkGirl" alt=""><span>לוֹחֶמֶת</span></button>
+    </div>
+    <button class="btn primary" id="pkGo" disabled>זֶה אֲנִי</button>
+  </div>
+</section>
+
+<!-- ================= WAREHOUSE — the concrete stage ================= -->
+<section class="screen" id="warehouse">
+  <div class="whwrap">
+    <div class="whtop">
+      <button class="txtbtn" id="whSkip">{אֲנִי כְּבָר יוֹדֵעַ|אֲנִי כְּבָר יוֹדַעַת}</button>
+    </div>
+    <div class="saidby">
+      <img id="whCoach" alt="">
+      <p id="whSay"></p>
+    </div>
+    <div class="whtask" id="whTask"></div>
+    <div class="crates" id="whCrates"></div>
+    <div class="pilewrap">
+      <span class="pilelbl">הַחֲתִיכוֹת</span>
+      <div class="pile" id="whPile"></div>
+    </div>
+    <button class="btn primary" id="whNext" hidden>הַלְאָה</button>
+  </div>
+</section>
+
+<!-- ================= STORY ================= -->
+<section class="screen" id="story">
+  <div class="stwrap">
+    <button class="txtbtn" id="stSkip" style="align-self:flex-start">לְדַלֵּג</button>
+    <div class="stimg"><img id="stImg" alt=""></div>
+    <p class="sttxt" id="stTxt"></p>
+    <div class="stdots" id="stDots"></div>
+    <button class="btn primary" id="stNext">הַלְאָה</button>
+  </div>
+</section>
+
+<!-- ================= HOME — one screen, one button ================= -->
+<section class="screen" id="home">
+  <div class="homewrap">
+    <div class="hometop">
+      <button class="iconbtn" id="menuBtn">&#9776;</button>
+      <div class="beltbits" id="beltBits"></div>
+    </div>
+    <div class="homestage">
+      <div class="hs-floor" id="hsFloor"></div>
+      <div class="hs-name"><b id="hsName"></b><span id="hsPower"></span></div>
+      <div class="shadow" id="shFoe" style="left:4%;width:44%"></div>
+      <div class="shadow" id="shMe" style="right:4%;width:40%"></div>
+      <img class="hs-foe" id="hsFoe" alt="">
+      <img class="hs-me"  id="hsMe"  alt="">
+    </div>
+    <div class="homefoot">
+      <div class="saidby">
+        <img id="hsCoach" alt="">
+        <p id="hsSay"></p>
+      </div>
+      <button class="btn primary" id="goFight">לְהִלָּחֵם</button>
+    </div>
+  </div>
+</section>
+
+<button class="tapgate" id="tapGate" hidden>הַלְאָה &#8592;</button>
+
+<!-- ================= FIGHT ================= -->
+<section class="screen" id="fight">
+  <div class="fw">
+    <button class="pausebtn" id="pauseBtn" title="הפסקה">&#10073;&#10073;</button>
+    <div class="hud">
+      <div class="hp foe"><span class="nm" id="hudFoe"></span>
+        <div class="track"><u id="ghFoe"></u><i id="hpFoe" style="width:100%"></i></div></div>
+      <div class="mid"><div class="vs">VS</div><div class="sc num" id="scoreN">0</div></div>
+      <div class="hp me"><span class="nm" id="hudMe"></span>
+        <div class="track"><u id="ghMe"></u><i id="hpMe" style="width:100%"></i></div></div>
+    </div>
+
+    <div class="stage" id="stage">
+      <img class="f-foe" id="figFoe" alt="">
+      <img class="f-me"  id="figMe"  alt="">
+      <div class="incoming" id="incoming" hidden>
+        <span class="lab" id="incLab">מַכָּה שֶׁל</span>
+        <span class="n" id="incN">0</span>
+      </div>
+      <canvas id="fx"></canvas>
+      <div class="demo" id="demo" hidden>
+        <span class="dtag" id="demoTag">{תִּסְתַּכֵּל|תִּסְתַּכְּלִי}</span>
+        <div class="dline" id="demoLine"></div>
+        <div class="dcount num" id="demoCount"></div>
+      </div>
+    </div>
+    <div class="democtl" id="demoCtl" hidden>
+      <button class="btn ghost" id="againBtn">עוֹד פַּעַם</button>
+      <button class="btn primary" id="gotItBtn">{הֵבַנְתִּי|הֵבַנְתִּי}</button>
+    </div>
+
+    <div class="gridpane" id="gridPane">
+      <div class="objective" id="objective"></div>
+      <div class="gridhead">
+        <span class="want">הַמָּגֵן צָרִיךְ <b id="needN">0</b> חֲתִיכוֹת</span>
+        <span class="have">יֵשׁ <b id="haveN">0</b></span>
+      </div>
+      <div class="gridwrap" id="gridWrap">
+        <div class="grid" id="grid"></div>
+      </div>
+      <div class="readslot"><div class="readout" id="readout" hidden></div></div>
+      <div class="piecelist" id="pieces"></div>
+      <div class="hint" id="gridHint"></div>
+      <div class="gridfoot">
+        <button class="btn ghost" id="undoBtn">לְבַטֵּל חֲתִיכָה</button>
+        <button class="btn ghost" id="helpBtn">אֲנִי {תָּקוּעַ|תְּקוּעָה}</button>
+      </div>
+      <div class="readyslot"><button class="btn primary" id="readyBtn" hidden>אֲנִי {מוּכָן|מוּכָנָה}</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RESULT ================= -->
+<section class="screen" id="result">
+  <div class="res">
+    <h1 id="resTitle"></h1>
+    <p class="sub" id="resSub"></p>
+    <div class="clue" id="resClue" hidden>
+      <span>רֶמֶז מֵהַחֲגוֹרָה</span>
+      <p id="resClueTxt"></p>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>נִקּוּד</span><b id="rsScore">0</b></div>
+      <div class="stat"><span>מְגִנִּים</span><b id="rsBlocks">0</b></div>
+      <div class="stat"><span>רֶצֶף</span><b id="rsCombo">0</b></div>
+    </div>
+    <div class="learned" id="resLearned" hidden>
+      <h4>מָה הִשְׁתַּפֵּר עַכְשָׁו</h4>
+      <div id="resLearnedRows"></div>
+    </div>
+    <button class="btn primary" id="resGo">הַלְאָה</button>
+    <button class="txtbtn" id="resAgain">עוֹד סִבּוּב מוּלוֹ</button>
+  </div>
+</section>
+
+<!-- ================= PARENT ================= -->
+<section class="screen" id="parent">
+  <div class="pwrap">
+    <button class="txtbtn" id="pBack">&rsaquo; חזרה</button>
+    <h2>מה הוא באמת יודע</h2>
+    <p class="lead">כל ריבוע הוא תרגיל אחד. הצבע נקבע לפי כמה פעמים הוא ענה נכון
+      <b>ומהר</b>, לא לפי כמה פעמים ראה אותו.</p>
+    <div class="mat" id="mat"></div>
+    <div class="legend">
+      <span><i style="background:#161C2A"></i>לא נבדק</span>
+      <span><i style="background:#7A1024"></i>נופל</span>
+      <span><i style="background:#1B4FD1"></i>מבין</span>
+      <span><i style="background:#3DDC84"></i>בעל פה</span>
+    </div>
+    <div class="plist" id="pStats"></div>
+    <h2 style="margin-top:20px">סדר הלימוד</h2>
+    <p class="lead">הלוחות נפתחים לפי סדר בנוי, לא לפי 2,3,4. תרגיל קשה לא ייפתח
+      לפני שהחלקים שמרכיבים אותו יושבים.</p>
+    <div class="tiers" id="pTiers"></div>
+    <h2 style="margin-top:20px">מה הכי חסר</h2>
+    <div class="plist" id="pWeak"></div>
+    <h2 style="margin-top:20px">להתחיל מחדש</h2>
+    <p class="lead">שתי אפשרויות שונות. הראשונה בטוחה, השנייה לא הפיכה.</p>
+    <button class="btn ghost" id="pRestart" style="margin-top:4px">להתחיל את הסיפור מחדש</button>
+    <p class="lead" style="margin:7px 0 16px;font-size:12.5px">
+      הקומות, הרמזים והניקוד מתאפסים — <b>מה שהוא כבר יודע נשמר.</b>
+      טוב כשהוא רוצה להילחם שוב בתאומים.</p>
+    <button class="btn ghost" id="pReset" style="color:var(--red-hi);border-color:rgba(232,18,60,.4)">למחוק הכל</button>
+    <p class="lead" style="margin:7px 0 0;font-size:12.5px">
+      מוחק גם את כל מה שנמדד עליו. אין דרך חזרה.</p>
+  </div>
+</section>
+
+</div>
+
+<div class="drawer" id="drawer"><div class="sheet" id="drawerIn"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>window.VOICE_BASE="audio/";</script>
+<script>
+const ART = {"ghost": "art/ghost.webp", "reveal": "art/reveal.webp", "shards": "art/shards.webp", "coach": "art/coach.webp", "emblem": "art/emblem.webp", "hero": "art/hero.webp", "i2": "art/i2.webp", "i3": "art/i3.webp", "i4": "art/i4.webp", "i5": "art/i5.webp", "i6": "art/i6.webp", "i7": "art/i7.webp", "i8": "art/i8.webp", "i9": "art/i9.webp", "i10": "art/i10.webp", "champ": "art/champ.webp", "heroine": "art/heroine.webp"};
+const VCLIPS=[{"t":"לזה קוראים כפל כותבים אותו ככה שלוש כפול ארבע שווה שתים עשרה","f":"wh_name_m.mp3","g":"m","n":""},{"t":"תלחצי על חתיכה כדי לשים אותה בארגז ארבע חתיכות בכל ארגז","f":"wh_tap_f.mp3","g":"f","n":""},{"t":"תלחץ על חתיכה כדי לשים אותה בארגז ארבע חתיכות בכל ארגז","f":"wh_tap_m.mp3","g":"m","n":""},{"t":"עשרה לוחמים תפסו אותן כל אחד שומר על חתיכה אחת","f":"st_3_m.mp3","g":"m","n":""},{"t":"מהחתיכות בונים מגן בלי מגן הם יפילו אותך","f":"st_4_m.mp3","g":"m","n":""},{"t":"מהחתיכות בונים מגן בלי מגן הם יפילו אותך","f":"st_4_f.mp3","g":"f","n":""},{"t":"תחזירי את עשר החתיכות ותהיי האלופה הבאה","f":"st_5_f.mp3","g":"f","n":""},{"t":"תחזיר את עשר החתיכות ותהיה האלוף הבא","f":"st_5_m.mp3","g":"m","n":""},{"t":"הוא עוד עומד הכל נשמר אפשר לנסות שוב","f":"fg_lost_m.mp3","g":"m","n":""},{"t":"שלום אני מוריס ואני אסביר לך הכל לאט","f":"fg_hello_m.mp3","g":"m","n":""},{"t":"שלושת האגרופים מכה שלישית שלא רואים","f":"foe_2_m.mp3","g":"m","n":""},{"t":"שלושה ארגזים של ארבע זה שתים עשרה","f":"wh_rule_m.mp3","g":"m","n":""},{"t":"ארבע זרועות מכפיל ואז מכפיל שוב","f":"foe_4_m.mp3","g":"m","n":""},{"t":"ארגז מלא ארבע חתיכות עכשיו הבא","f":"wh_full_m.mp3","g":"m","n":""},{"t":"ספור איתי ארבע שמונה שתים עשרה","f":"wh_count_m.mp3","g":"m","n":""},{"t":"ספרי איתי ארבע שמונה שתים עשרה","f":"wh_count_f.mp3","g":"f","n":""},{"t":"לילה אחד היא נשברה לעשר חתיכות","f":"st_2_m.mp3","g":"m","n":""},{"t":"תשעת הזנבות תמיד אחד פחות מעשר","f":"foe_7_m.mp3","g":"m","n":""},{"t":"אני מוריס אימנתי פעם את האלוף","f":"wh_intro_m.mp3","g":"m","n":""},{"t":"ניצחת החזרת עוד חתיכה מהחגורה","f":"fg_won_m.mp3","g":"m","n":""},{"t":"ניצחת החזרת עוד חתיכה מהחגורה","f":"fg_won_f.mp3","g":"f","n":""},{"t":"שבע המסכות מחליף פנים בכל מכה","f":"foe_8_m.mp3","g":"m","n":""},{"t":"שש השרירים חמש מכות ועוד אחת","f":"foe_6_m.mp3","g":"m","n":""},{"t":"לאלוף הזירה הייתה חגורה אחת","f":"st_1_m.mp3","g":"m","n":""},{"t":"התאומים עושים כל דבר פעמיים","f":"foe_0_m.mp3","g":"m","n":""},{"t":"אני בונה אותו ואפשר להסתכל","f":"fg_watch_m.mp3","g":"m","n":""},{"t":"מכונת העשר סופרת רק בעשרות","f":"foe_1_m.mp3","g":"m","n":""},{"t":"שמונה הצללים מתפצל לשמונה","f":"foe_5_m.mp3","g":"m","n":""},{"t":"חטפת בואי נראה את זה יחד","f":"fg_hit_f.mp3","g":"f","n":""},{"t":"חטפת בוא נראה את זה יחד","f":"fg_hit_m.mp3","g":"m","n":""},{"t":"תעזור לי לסדר את המחסן","f":"wh_help_m.mp3","g":"m","n":""},{"t":"תעזרי לי לסדר את המחסן","f":"wh_help_f.mp3","g":"f","n":""},{"t":"יד הפלדה סופר בחמישיות","f":"foe_3_m.mp3","g":"m","n":""},{"t":"האלוף הוא יודע הכל","f":"foe_9_m.mp3","g":"m","n":""},{"t":"מי אתה בזירה תבחר","f":"fg_pick_m.mp3","g":"m","n":""},{"t":"מי את בזירה תבחרי","f":"fg_pick_f.mp3","g":"f","n":""},{"t":"סימנתי לך איפה","f":"fg_marked_m.mp3","g":"m","n":""},{"t":"נספור אותו יחד","f":"fg_countit.mp3","g":"x","n":""},{"t":"שלושים ושתיים","f":"num_32_x.mp3","g":"x","n":"32"},{"t":"ארבעים ושתיים","f":"num_42_x.mp3","g":"x","n":"42"},{"t":"ארבעים ושמונה","f":"num_48_x.mp3","g":"x","n":"48"},{"t":"עשרים ושמונה","f":"num_28_x.mp3","g":"x","n":"28"},{"t":"חמישים וארבע","f":"num_54_x.mp3","g":"x","n":"54"},{"t":"שבעים ושתיים","f":"num_72_x.mp3","g":"x","n":"72"},{"t":"תבנה מגן של","f":"fg_build_m.mp3","g":"m","n":""},{"t":"תבני מגן של","f":"fg_build_f.mp3","g":"f","n":""},{"t":"עוד פעם לאט","f":"fg_again_m.mp3","g":"m","n":""},{"t":"עשרים וארבע","f":"num_24_x.mp3","g":"x","n":"24"},{"t":"שלושים וחמש","f":"num_35_x.mp3","g":"x","n":"35"},{"t":"ארבעים וחמש","f":"num_45_x.mp3","g":"x","n":"45"},{"t":"ארבעים ותשע","f":"num_49_x.mp3","g":"x","n":"49"},{"t":"שישים ושלוש","f":"num_63_x.mp3","g":"x","n":"63"},{"t":"שישים וארבע","f":"num_64_x.mp3","g":"x","n":"64"},{"t":"שמונים ואחת","f":"num_81_x.mp3","g":"x","n":"81"},{"t":"כשאתה מוכן","f":"fg_ready_m.mp3","g":"m","n":""},{"t":"כשאת מוכנה","f":"fg_ready_f.mp3","g":"f","n":""},{"t":"שמונה עשרה","f":"num_18_x.mp3","g":"x","n":"18"},{"t":"עשרים ואחת","f":"num_21_x.mp3","g":"x","n":"21"},{"t":"עשרים וחמש","f":"num_25_x.mp3","g":"x","n":"25"},{"t":"עשרים ושבע","f":"num_27_x.mp3","g":"x","n":"27"},{"t":"שלושים ושש","f":"num_36_x.mp3","g":"x","n":"36"},{"t":"חמישים ושש","f":"num_56_x.mp3","g":"x","n":"56"},{"t":"תרגיל חדש","f":"fg_newfact_m.mp3","g":"m","n":""},{"t":"שתים עשרה","f":"num_12_x.mp3","g":"x","n":"12"},{"t":"ארבע עשרה","f":"num_14_x.mp3","g":"x","n":"14"},{"t":"קבוצה אחת","f":"fg_onegroup.mp3","g":"x","n":""},{"t":"שורות של","f":"fg_rows_m.mp3","g":"m","n":""},{"t":"חמש עשרה","f":"num_15_x.mp3","g":"x","n":"15"},{"t":"ביחד זה","f":"fg_split_m.mp3","g":"m","n":""},{"t":"שש עשרה","f":"num_16_x.mp3","g":"x","n":"16"},{"t":"חתיכות","f":"fg_pieces_m.mp3","g":"m","n":""},{"t":"שלושים","f":"num_30_x.mp3","g":"x","n":"30"},{"t":"ארבעים","f":"num_40_x.mp3","g":"x","n":"40"},{"t":"חמישים","f":"num_50_x.mp3","g":"x","n":"50"},{"t":"שמונים","f":"num_80_x.mp3","g":"x","n":"80"},{"t":"משבצות","f":"fg_squares.mp3","g":"x","n":""},{"t":"בדיוק","f":"fg_exact_m.mp3","g":"m","n":""},{"t":"שתיים","f":"num_2_x.mp3","g":"x","n":"2"},{"t":"שמונה","f":"num_8_x.mp3","g":"x","n":"8"},{"t":"עשרים","f":"num_20_x.mp3","g":"x","n":"20"},{"t":"שישים","f":"num_60_x.mp3","g":"x","n":"60"},{"t":"שבעים","f":"num_70_x.mp3","g":"x","n":"70"},{"t":"תשעים","f":"num_90_x.mp3","g":"x","n":"90"},{"t":"חסמת","f":"fg_blocked_m.mp3","g":"m","n":""},{"t":"חסמת","f":"fg_blocked_f.mp3","g":"f","n":""},{"t":"ועוד","f":"fg_plus_m.mp3","g":"m","n":""},{"t":"כפול","f":"fg_times_m.mp3","g":"m","n":""},{"t":"שווה","f":"fg_equals_m.mp3","g":"m","n":""},{"t":"שלוש","f":"num_3_x.mp3","g":"x","n":"3"},{"t":"ארבע","f":"num_4_x.mp3","g":"x","n":"4"},{"t":"תבנה","f":"fg_buildword_m.mp3","g":"m","n":""},{"t":"תבני","f":"fg_buildword_f.mp3","g":"f","n":""},{"t":"אחת","f":"num_1_x.mp3","g":"x","n":"1"},{"t":"חמש","f":"num_5_x.mp3","g":"x","n":"5"},{"t":"שבע","f":"num_7_x.mp3","g":"x","n":"7"},{"t":"תשע","f":"num_9_x.mp3","g":"x","n":"9"},{"t":"עשר","f":"num_10_x.mp3","g":"x","n":"10"},{"t":"מאה","f":"num_100_x.mp3","g":"x","n":"100"},{"t":"פעם","f":"fg_paam.mp3","g":"x","n":""},{"t":"שש","f":"num_6_x.mp3","g":"x","n":"6"},{"t":"זה","f":"fg_ze.mp3","g":"x","n":""}];
+
+/* ============================================================
+   RECORDED VOICE — Morris
+   Every child-facing line was recorded once, clip by clip.
+   A sentence the game builds at runtime ("תבנה מגן של 12 משבצות")
+   is resolved into a sequence of clips and played back in order.
+   If any part of a line has no recording, the whole line falls
+   back to the device voice, so nothing is ever half-spoken.
+   ============================================================ */
+const VOICE=(function(){
+  const BASE=(window.VOICE_BASE||'');
+  const on=()=>!!BASE;
+
+  /* niqqud and punctuation are for the eye, not for lookup */
+  function norm(s){
+    return String(s||'')
+      .replace(/[֑-ׇ]/g,'')
+      .replace(/[^֐-׿0-9 ]/g,' ')
+      .replace(/\s+/g,' ').trim();
+  }
+
+  /* Hebrew writes חָסַמְתָּ and חָסַמְתְּ identically once the niqqud is
+     gone, so where two clips share a spelling the child's own gender
+     decides which recording plays. */
+  function pick(list){
+    const g=(S&&S.g==='f')?'f':'m';
+    return list.find(r=>r.g===g) || list.find(r=>r.g==='x') || list[0];
+  }
+
+  const byText={};
+  VCLIPS.forEach(r=>{ (byText[r.t]=byText[r.t]||[]).push(r) });
+  const byNum={};
+  VCLIPS.forEach(r=>{ if(r.n) byNum[r.n]=r });
+  const phrases=Object.keys(byText).sort((a,b)=>b.length-a.length);
+
+  /* longest phrase first, then bare numerals; anything left over means
+     this line is not fully recorded */
+  function resolve(text){
+    if(!on()) return null;
+    let s=norm(text);
+    if(!s) return [];
+    const out=[];
+    let guard=0;
+    while(s && guard++<60){
+      let hit=null;
+      for(const p of phrases){
+        if(s===p || s.indexOf(p+' ')===0){ hit=p; break }
+      }
+      if(hit){
+        out.push(pick(byText[hit]).f);
+        s=s.slice(hit.length).trim();
+        continue;
+      }
+      const m=s.match(/^(\d+)(\s|$)/);
+      if(m && byNum[m[1]]){
+        out.push(byNum[m[1]].f);
+        s=s.slice(m[1].length).trim();
+        continue;
+      }
+      return null;             /* unrecorded remainder — use the device voice */
+    }
+    return s?null:out;
+  }
+
+  const cache={};
+  function get(file){
+    let a=cache[file];
+    if(!a){ a=cache[file]=new Audio(BASE+file); a.preload='auto' }
+    return a;
+  }
+  let live=null;
+  function stop(){
+    if(live){ try{ live.pause(); live.currentTime=0 }catch(e){} live=null }
+  }
+  /* clips run one after the other, each waiting for the one before it */
+  function play(files, token, done){
+    let i=0;
+    const step=()=>{
+      if(token!==NSEQ) return stop();
+      if(i>=files.length){ live=null; return done&&done() }
+      const a=get(files[i++]);
+      live=a;
+      a.onended=()=>setTimeout(step,110);
+      a.onerror=()=>setTimeout(step,60);
+      try{ a.currentTime=0 }catch(e){}
+      const p=a.play();
+      if(p&&p.catch) p.catch(()=>setTimeout(step,60));
+    };
+    step();
+  }
+  /* pull the short, constantly repeated clips into memory early */
+  function warm(){
+    if(!on()) return;
+    VCLIPS.slice(-40).forEach(r=>{ try{ get(r.f) }catch(e){} });
+  }
+  return {on, resolve, play, stop, warm, norm};
+})();
+
+/* browsers only allow sound after the child has touched the screen */
+addEventListener('pointerdown', ()=>VOICE.warm(), {once:true});
+/* ============================================================
+   ZIRAT HAKEFEL v2 — engine
+   ============================================================ */
+const $=id=>document.getElementById(id);
+const KEY='zirat_hakefel_v2';
+const fk=(a,b)=>a+'x'+b;
+
+
+/* ============================================================
+   GENDER — Hebrew inflects almost every verb and adjective, so
+   every child-facing string is written as {male|female} and
+   resolved at render time. A MutationObserver applies it to the
+   whole document, which means no call site can forget.
+   ============================================================ */
+function gx(s){
+  if(s==null) return s;
+  const f = (S && S.g === 'f');
+  return String(s).replace(/\{([^{}|]*)\|([^{}|]*)\}/g, (_,m,w)=> f ? w : m);
+}
+/* Markers are consumed the first time they render, so the original text is
+   kept and re-applied whenever the chosen gender changes. */
+const GSRC=[];
+function applyNode(n, src){
+  const v=gx(src);
+  if(v!==n.nodeValue) n.nodeValue=v;
+}
+function trackAndApply(n){
+  const src=n.nodeValue;
+  if(src.indexOf('{')<0 || src.indexOf('|')<0) return;
+  GSRC.push({n, src});
+  applyNode(n, src);
+}
+function sweepGender(root){
+  if(!root) return;
+  if(root.nodeType===3) return trackAndApply(root);
+  const w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const hits=[];
+  while(w.nextNode()) hits.push(w.currentNode);
+  hits.forEach(trackAndApply);
+}
+function regender(){
+  for(let i=GSRC.length-1;i>=0;i--){
+    const e=GSRC[i];
+    if(!e.n.isConnected){ GSRC.splice(i,1); continue }
+    applyNode(e.n, e.src);
+  }
+}
+function setGender(g){ S.g=g; save(); regender() }
+function startGenderSweep(){
+  sweepGender(document.body);
+  new MutationObserver(muts=>{
+    for(const m of muts){
+      if(m.type==='characterData') trackAndApply(m.target);
+      m.addedNodes && m.addedNodes.forEach(n=>sweepGender(n));
+    }
+  }).observe(document.body,{childList:true,subtree:true,characterData:true});
+}
+const HE = {
+  you:      '{אַתָּה|אַתְּ}',
+  fighter:  '{לוֹחֵם|לוֹחֶמֶת}',
+  ready:    '{מוּכָן|מוּכָנָה}',
+  build:    '{תִּבְנֶה|תִּבְנִי}',
+  look:     '{תִּסְתַּכֵּל|תִּסְתַּכְּלִי}',
+  count:    '{תִּסְפֹּר|תִּסְפְּרִי}',
+  drag:     '{תִּמְשֹׁךְ|תִּמְשְׁכִי}',
+  press:    '{תִּלְחַץ|תִּלְחֲצִי}',
+  did:      '{עָשִׂיתָ|עָשִׂית}',
+  built:    '{בָּנִיתָ|בָּנִית}',
+  blocked:  '{חָסַמְתָּ|חָסַמְתְּ}',
+  broke:    '{פֵּרַקְתָּ|פֵּרַקְתְּ}',
+  won:      '{נִצַּחְתָּ|נִצַּחְתְּ}',
+  stuck:    '{תָּקוּעַ|תְּקוּעָה}'
+};
+
+/* ---------- sound ---------- */
+let AC=null;
+function ac(){ if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(AC&&AC.state==='suspended')AC.resume(); return AC }
+function beep(f,d,type,vol,to){
+  if(!S||!S.sound) return; const c=ac(); if(!c) return;
+  const o=c.createOscillator(),g=c.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f,c.currentTime);
+  if(to) o.frequency.exponentialRampToValueAtTime(to,c.currentTime+d);
+  g.gain.setValueAtTime(vol||.05,c.currentTime);
+  g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d);
+  o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d);
+}
+function thud(){ if(!S||!S.sound)return; const c=ac(); if(!c)return;
+  const n=c.createBufferSource(), buf=c.createBuffer(1,c.sampleRate*.16,c.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3.2);
+  n.buffer=buf; const g=c.createGain(); g.gain.value=.16;
+  const f=c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=430;
+  n.connect(f);f.connect(g);g.connect(c.destination);n.start();
+}
+function buzz(p){ if(S&&S.sound&&navigator.vibrate) try{navigator.vibrate(p)}catch(e){} }
+let VOICES=[];
+function loadVoices(){ try{VOICES=speechSynthesis.getVoices()||[]}catch(e){} }
+if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices }
+function heVoices(){ return VOICES.filter(v=>/^he(-|_|$)|iw/i.test(v.lang||'')) }
+function pickVoice(){
+  const list=heVoices(); if(!list.length) return null;
+  if(S && S.voice){ const chosen=list.find(v=>v.voiceURI===S.voice||v.name===S.voice); if(chosen) return chosen }
+  /* prefer a non-"compact"/"eSpeak" voice — those are the flattest ones */
+  const good=list.find(v=>!/compact|espeak|default/i.test(v.name||''));
+  return good || list[0];
+}
+
+/* ============================================================
+   NARRATOR — one voice, one queue.
+   Every speak() used to call speechSynthesis.cancel(), which fired the
+   PREVIOUS utterance's onend and made its callback run early — that is
+   how an explanation got cut off and the game jumped a step. Now every
+   line carries a token, and a superseded line can never advance anything.
+   ============================================================ */
+let NSEQ=0, NBUSY=false;
+function nstop(){ NSEQ++; NBUSY=false; try{ gateHide() }catch(e){} try{ VOICE.stop() }catch(e){} try{ speechSynthesis.cancel() }catch(e){} }
+function estMs(txt){ return Math.max(1400, Math.min(11000, txt.length*90)) }
+
+function sayOne(text, token, done){
+  const txt=gx(String(text||'')).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+  if(!txt) return done&&done();
+  const est=estMs(txt);
+  let fired=false;
+  /* a small beat after the voice stops, so one line does not tread on the next */
+  const settle=(ms)=>{
+    if(fired) return; fired=true;
+    setTimeout(()=>{ if(token===NSEQ){ NBUSY=false; done&&done() } }, ms);
+  };
+  /* with the device voice the end event is unreliable, so a floor keeps
+     short utterances on screen long enough to be read */
+  const floor=Math.max(1900, Math.round(est*0.62));
+  const t0=Date.now();
+  const finish=()=>settle(Math.max(500, floor-(Date.now()-t0)));
+
+  if(!S||!S.tts) return void setTimeout(finish, Math.max(floor,est)*0.55);
+
+  /* Morris was recorded line by line; his own voice wins whenever the
+     whole line is covered by recordings */
+  try{
+    const clips=VOICE.resolve(txt);
+    if(clips && clips.length) return VOICE.play(clips, token, ()=>settle(260));
+  }catch(err){}
+
+  if(!('speechSynthesis' in window)) return void setTimeout(finish, Math.max(floor,est)*0.55);
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(txt);
+    u.lang='he-IL'; u.rate=paceRate(); u.pitch=1.06; u.volume=1;
+    const v=pickVoice(); if(v) u.voice=v;
+    u.onend=finish; u.onerror=finish;
+    setTimeout(finish, est+3500);
+    speechSynthesis.speak(u);
+  }catch(err){ setTimeout(finish, Math.max(floor,est)) }
+}
+/* one line, optionally followed by an action */
+function narrate(text, done){
+  const my=++NSEQ; NBUSY=true;
+  sayOne(text, my, ()=>{ if(my===NSEQ) done&&done() });
+  return my;
+}
+/* a sequence of lines: each one is shown, then spoken in full, then the
+   next — no fixed timers, so nothing can overrun a sentence */
+function narrateAll(steps, done){
+  const my=++NSEQ; NBUSY=true;
+  let i=0;
+  const next=()=>{
+    if(my!==NSEQ) return gateHide();
+    if(i>=steps.length){ NBUSY=false; gateHide(); return void(done&&done()) }
+    const st=steps[i++];
+    try{ st.show && st.show() }catch(e){}
+    /* the line is spoken, and then it stays on screen until the child
+       taps — no explanation to a seven-year-old vanishes on a timer */
+    sayOne(st.text!==undefined?st.text:'', my, ()=>{
+      if(my!==NSEQ) return gateHide();
+      if(i>=steps.length){ NBUSY=false; gateHide(); return void(done&&done()) }
+      gateShow(next);
+    });
+  };
+  next();
+  return my;
+}
+/* the one button that moves any explanation forward */
+function gateShow(onTap){
+  const g=$('tapGate'); if(!g) return onTap();
+  g.hidden=false;
+  g.onclick=()=>{ g.hidden=true; g.onclick=null; try{ ac() }catch(e){} onTap() };
+}
+function gateHide(){ const g=$('tapGate'); if(g){ g.hidden=true; g.onclick=null } }
+/* kept for every existing call site: speak and forget */
+function speak(t){ narrate(t) }
+function speakThen(t, done){ narrate(t, done) }
+
+/* how long a child gets to follow along, tunable by the grown-up */
+const PACE={ slow:{cell:640, row:900, rate:.84}, normal:{cell:380, row:560, rate:.96} };
+function pace(){ return PACE[(S&&S.pace)||'slow'] || PACE.slow }
+function paceRate(){ return pace().rate }
+function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('on');
+  clearTimeout(e._t); e._t=setTimeout(()=>e.classList.remove('on'),2400) }
+
+/* ============================================================
+   CURRICULUM — strategic order, not 2,3,4,5...
+   Every tier is built from the tier before it. A fact is never
+   asked before the facts it decomposes into are solid.
+   ============================================================ */
+const TIERS=[
+  {id:0, name:'מָה זֶה כֶּפֶל',        short:'1·2', nums:[1,2],
+   why:'לספור קבוצות שוות במקום אחד־אחד'},
+  {id:1, name:'הָעֲשָׂרוֹת',            short:'×10', nums:[10],
+   why:'הלוח הכי קל — מוסיפים אפס'},
+  {id:2, name:'הַחֲמִישִׁיּוֹת',         short:'×5',  nums:[5],
+   why:'סופרים בחמישיות, כמו אצבעות'},
+  {id:3, name:'כָּפוּל־כָּפוּל',         short:'×4',  nums:[4],
+   why:'כפול 2, ועוד פעם כפול 2'},
+  {id:4, name:'עוֹד פַּעַם כָּפוּל',      short:'×8',  nums:[8],
+   why:'כפול 4, ועוד פעם כפול 4'},
+  {id:5, name:'עוֹד קְבוּצָה אַחַת',     short:'×3',  nums:[3],
+   why:'כפול 2, ועוד קבוצה אחת'},
+  {id:6, name:'חָמֵשׁ וְעוֹד אַחַת',      short:'×6',  nums:[6],
+   why:'כפול 5, ועוד קבוצה אחת'},
+  {id:7, name:'חָמֵשׁ וְעוֹד אַרְבַּע',    short:'×9',  nums:[9],
+   why:'כפול 5, ועוד כפול 4'},
+  {id:8, name:'הַקָּשֶׁה מִכֻּלָּם',       short:'×7',  nums:[7],
+   why:'כפול 5, ועוד כפול 2'}
+];
+const TIER_OF={}; TIERS.forEach(t=>t.nums.forEach(n=>TIER_OF[n]=t.id));
+/* a fact belongs to the tier of whichever factor is taught LAST */
+function factTier(a,b){ return Math.max(TIER_OF[a], TIER_OF[b]) }
+
+/* Every hard number is built from two easier ones, ADDITIVELY —
+   because the grid is an area model, and area splits by addition.
+   Each part always comes from a tier already passed. */
+const BUILD={
+  1:null, 2:null, 10:null, 5:null,
+  4:{from:[2,2], say:'כָּפוּל 2, וְעוֹד פַּעַם כָּפוּל 2'},
+  8:{from:[4,4], say:'כָּפוּל 4, וְעוֹד פַּעַם כָּפוּל 4'},
+  3:{from:[2,1], say:'כָּפוּל 2, וְעוֹד קְבוּצָה אַחַת'},
+  6:{from:[5,1], say:'כָּפוּל 5, וְעוֹד קְבוּצָה אַחַת'},
+  9:{from:[5,4], say:'כָּפוּל 5, וְעוֹד כָּפוּל 4'},
+  7:{from:[5,2], say:'כָּפוּל 5, וְעוֹד כָּפוּל 2'}
+};
+/* the two rectangles a child is invited to build for a×b */
+function splitFor(a,b){
+  const hard = TIER_OF[a]>=TIER_OF[b] ? a : b;
+  const other = hard===a ? b : a;
+  const bd=BUILD[hard];
+  if(!bd) return null;
+  return {parts:bd.from, other, hard, say:bd.say};
+}
+
+/* mastery level of one fact, borrowing a little from its mirror */
+function lvl(a,b){
+  const x=S.facts[fk(a,b)], y=S.facts[fk(b,a)];
+  if(!x) return 0;
+  const borrowed=Math.min(3, Math.round((y?y.l:0)*0.6));
+  return Math.max(x.l, Math.min(x.l+1, borrowed));
+}
+/* a tier is open once the tier before it is mostly solid */
+/* only the facts this tier actually INTRODUCES count towards opening the
+   next one — facts still locked behind later tiers must not hold it shut */
+function tierFacts(t){
+  const out=[];
+  TIERS[t].nums.forEach(n=>{
+    for(let k=1;k<=10;k++){
+      if(TIER_OF[k]===undefined) continue;
+      if(factTier(n,k)!==t) continue;
+      out.push([n,k]);
+    }
+  });
+  return out;
+}
+function tierSolid(t){
+  const f=tierFacts(t); if(!f.length) return 1;
+  return f.filter(([a,b])=>lvl(a,b)>=2).length / f.length;
+}
+function openTier(){
+  let t=0;
+  while(t<TIERS.length-1 && tierSolid(t)>=0.7) t++;
+  return t;
+}
+/* THE GATE: a fact may be asked only if its tier is open AND the
+   pieces it is built from are already understood. */
+function gated(a,b){
+  if(TIER_OF[a]===undefined||TIER_OF[b]===undefined) return false;
+  if(factTier(a,b) > openTier()) return false;
+  const sp=splitFor(a,b);
+  if(sp){ for(const p of sp.parts){ if(p===1) continue;
+    if(lvl(p,sp.other) < 2) return false } }
+  return true;
+}
+function pool(){
+  const out=[];
+  for(let a=1;a<=10;a++) for(let b=1;b<=10;b++) if(gated(a,b)) out.push([a,b]);
+  return out;
+}
+/* what to serve next: something due, inside the gate, demo first */
+function isDue(a,b){ const f=S.facts[fk(a,b)]; return !f||!f.due||Date.now()>=f.due }
+function shown(a,b){ return !!(S.facts[fk(a,b)]||{}).demo }
+/* guidance fading: 0 = watch me build it, 1 = build it on the outline,
+   2 = build it alone. A fact only climbs a rung after succeeding on it. */
+function rungOf(a,b){ const f=S.facts[fk(a,b)]; return f?(f.rung||0):0 }
+function bumpRung(a,b){ const f=S.facts[fk(a,b)]; if(f&&f.rung<2){f.rung++;save()} }
+/* At most two brand-new facts per fight. Without this cap the game keeps
+   introducing and never consolidates — the child meets everything once
+   and remembers nothing. */
+let NEWBUDGET=2;
+function resetBudget(n){ NEWBUDGET = (n===undefined?2:n) }
+function pick(last){
+  const p=pool().filter(([a,b])=>!(last&&last[0]===a&&last[1]===b));
+  if(!p.length) return [2,2];
+  const fresh=p.filter(([a,b])=>!shown(a,b));
+  const old=p.filter(([a,b])=>shown(a,b));
+  const teachScore=([a,b])=>{const q=a*b; return q>=4?q:q+100};
+  const takeFresh=()=>{
+    fresh.sort((x,y)=>(factTier(...x)-factTier(...y))||(teachScore(x)-teachScore(y)));
+    NEWBUDGET--; return fresh[0];
+  };
+  if(!old.length) return takeFresh();
+  if(fresh.length && NEWBUDGET>0) return takeFresh();
+  const due=old.filter(([a,b])=>isDue(a,b));
+  const from=due.length?due:old;
+  from.sort((x,y)=>lvl(x[0],x[1])-lvl(y[0],y[1]));
+  const head=from.slice(0,Math.max(3,Math.ceil(from.length*0.3)));
+  return head[Math.floor(Math.random()*head.length)];
+}
+
+/* ---------- state ---------- */
+let S=null;
+function blank(){
+  const facts={};
+  for(let a=1;a<=10;a++) for(let b=1;b<=10;b++)
+    facts[fk(a,b)]={l:0,s:0,c:0,w:0,t:0,ms:[],d:[],due:0,demo:0,rung:0};
+  return {v:2,name:'',g:'m',onboard:0,pace:'slow',voice:'',facts,beat:{},xp:0,score:0,best:0,sound:true,tts:true,
+          totC:0,totW:0,seconds:0,sessions:0,clues:0,started:Date.now()};
+}
+function load(){
+  try{const r=localStorage.getItem(KEY); if(r){const p=JSON.parse(r);
+    if(p&&p.v===2){ for(const k in p.facts){const f=p.facts[k];
+      if(!f.ms)f.ms=[]; if(!f.d)f.d=[]; if(f.due===undefined)f.due=0;
+      if(f.demo===undefined)f.demo=0; if(f.rung===undefined)f.rung=f.demo?2:0}
+      if(!p.g)p.g='m'; if(!p.pace)p.pace='slow'; if(p.voice===undefined)p.voice=''; if(p.onboard===undefined)p.onboard=p.sessions>0?1:0;
+      return p }}}catch(e){}
+  return null;
+}
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
+const today=()=>new Date().toISOString().slice(0,10);
+function medianMs(f){ if(!f.ms||!f.ms.length) return 0;
+  const s=[...f.ms].sort((x,y)=>x-y); return s[Math.floor(s.length/2)] }
+
+/* how the answer was produced decides how high it can climb */
+const HOW={ demo:0, split:3, whole:5, helped:1 };
+function record(a,b,ok,ms,how){
+  const f=S.facts[fk(a,b)]; if(!f) return;
+  f.s++; f.t=Date.now();
+  const cap=HOW[how]!==undefined?HOW[how]:3;
+  if(ok){
+    f.c++; S.totC++;
+    if(how==='whole'){ f.ms.push(ms); if(f.ms.length>7) f.ms.shift() }
+    const med=medianMs(f)||ms, fast=med<3500;
+    if(f.l<cap){
+      if(how==='whole' && f.l>=3){
+        if(fast){ const d=today(); if(!f.d.includes(d)){f.d.push(d); if(f.d.length>4)f.d.shift()}
+          f.l = (f.l>=4 && f.d.length>=2) ? 5 : Math.min(4,f.l+1) }
+      } else f.l=Math.min(cap,f.l+1);
+    }
+    f.due = Date.now() + [0,.02,1,3,7,14][Math.min(5,f.l)]*864e5;
+  }else{
+    f.w++; S.totW++;
+    f.l = f.l>=4 ? 3 : Math.max(0,f.l-1);
+    f.due = Date.now() + 45e3;
+  }
+  save();
+}
+function markDemo(a,b){ const f=S.facts[fk(a,b)]; if(f&&!f.demo){ f.demo=1;
+  if(f.rung<1) f.rung=1;   /* watched it built -> next it is traced, not free-hand */
+  if(f.l<1) f.l=1; save()} }
+function memorised(){ let n=0; for(let a=1;a<=10;a++)for(let b=1;b<=10;b++) if(lvl(a,b)>=5)n++; return n }
+function understood(){ let n=0; for(let a=1;a<=10;a++)for(let b=1;b<=10;b++) if(lvl(a,b)>=3)n++; return n }
+
+/* ---------- particles ---------- */
+const PFX={p:[],x:null,w:0,h:0,raf:0};
+function fxInit(cid){
+  const c=$(cid); if(!c) return;
+  const r=c.getBoundingClientRect(); if(r.width<10||r.height<10) return;
+  const d=Math.min(2,devicePixelRatio||1);
+  c.width=r.width*d; c.height=r.height*d;
+  PFX.w=r.width; PFX.h=r.height;
+  PFX.x=c.getContext('2d'); PFX.x.setTransform(d,0,0,d,0,0);
+}
+function burst(px,py,col,n,sp){
+  if(!PFX.x) return;
+  const x=px*PFX.w,y=py*PFX.h;
+  for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, s=(0.4+Math.random())*(sp||3);
+    PFX.p.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1,dec:.014+Math.random()*.02,
+      r:1.6+Math.random()*3,c:col}) }
+  if(!PFX.raf) PFX.raf=requestAnimationFrame(ploop);
+}
+function ploop(){
+  const x=PFX.x; if(!x){PFX.raf=0;return}
+  x.clearRect(0,0,PFX.w,PFX.h);
+  for(let i=PFX.p.length-1;i>=0;i--){
+    const p=PFX.p[i]; p.life-=p.dec;
+    if(p.life<=0){PFX.p.splice(i,1);continue}
+    p.x+=p.vx; p.y+=p.vy; p.vy+=.12; p.vx*=.99;
+    x.globalAlpha=Math.max(0,p.life); x.fillStyle=p.c;
+    x.beginPath(); x.arc(p.x,p.y,p.r*p.life,0,6.283); x.fill();
+  }
+  x.globalAlpha=1;
+  PFX.raf = PFX.p.length ? requestAnimationFrame(ploop) : 0;
+}
+function hitstop(ms){ const a=$('app')||document.querySelector('.app');
+  if(!a) return; a.style.filter='contrast(1.5) brightness(1.25)';
+  setTimeout(()=>a.style.filter='',ms||70) }
+function floater(txt,color,side){
+  const st=$('stage'); if(!st) return;
+  const el=document.createElement('div');
+  el.className='floater'; el.textContent=txt; el.style.color=color;
+  el.style.top='34%'; el.style[side]='14%';
+  st.appendChild(el); setTimeout(()=>el.remove(),1000);
+}
+/* ============================================================
+   THE FIRST NINETY SECONDS
+   Concrete before pictorial, a named narrator, a reason to fight,
+   and no demand before a demonstration. Nothing here is timed.
+   ============================================================ */
+
+/* ---------- who am I in the arena ---------- */
+function openPick(){
+  show('pick');
+  $('pkBoy').src=ART.hero; $('pkGirl').src=ART.heroine||ART.hero;
+  const set=g=>{ setGender(g);
+    $('pkBoy').parentElement.classList.toggle('on',g==='m');
+    $('pkGirl').parentElement.classList.toggle('on',g==='f');
+    $('pkGo').disabled=false;
+    beep(560,.08,'square',.045,760); ac(); };
+  $('pkBoy').parentElement.onclick=()=>set('m');
+  $('pkGirl').parentElement.onclick=()=>set('f');
+  $('pkGo').disabled=true;
+  $('pkGo').onclick=()=>{ show('name'); $('fname').focus() };
+  speak(S.g==='f'?'מי את בזירה? תבחרי.':'מי אתה בזירה? תבחר.');
+}
+
+/* ---------- 1. the warehouse: things you can count ---------- */
+const CRATES=3, PER=4;
+let WH={placed:0, crate:0};
+function openWarehouse(){
+  show('warehouse');
+  WH={placed:0, crate:0};
+  $('whCoach').src=ART.coach;
+  const host=$('whCrates'); host.innerHTML='';
+  for(let c=0;c<CRATES;c++){
+    const b=document.createElement('div'); b.className='crate';
+    b.innerHTML=`<span class="clab num">0</span><div class="slots"></div>`;
+    for(let k=0;k<PER;k++){ const s=document.createElement('i'); b.querySelector('.slots').appendChild(s) }
+    host.appendChild(b);
+  }
+  $('whPile').innerHTML='';
+  for(let k=0;k<CRATES*PER;k++){ const p=document.createElement('button');
+    p.className='shard'; p.onclick=()=>placeShard(p); $('whPile').appendChild(p) }
+  narrateAll([
+    {show:()=>setSay(`אֲנִי מוֹרִיס. אִמַּנְתִּי פַּעַם אֶת הָאַלּוּף.`),
+     text:'אני מוריס. אימנתי פעם את האלוף.'},
+    {show:()=>setSay(`{תַּעֲזֹר|תַּעַזְרִי} לִי לְסַדֵּר אֶת הַמַּחְסָן?`),
+     text:S.g==='f'?'תעזרי לי לסדר את המחסן?':'תעזור לי לסדר את המחסן?'},
+    {show:()=>{ setSay(`{תִּלְחַץ|תִּלְחֲצִי} עַל חֲתִיכָה כְּדֵי לָשִׂים אוֹתָהּ בָּאַרְגָּז.`);
+       $('whTask').innerHTML=`<b>${PER}</b> חֲתִיכוֹת בְּכָל אַרְגָּז · <b>${CRATES}</b> אַרְגָּזִים`;
+       [...$('whCrates').children].forEach((c,i)=>c.classList.toggle('now',i===0)) },
+     text:(S.g==='f'?'תלחצי':'תלחץ')+' על חתיכה כדי לשים אותה בארגז. '+PER+' חתיכות בכל ארגז.'}
+  ]);
+  $('whNext').hidden=true;
+  $('whTask').innerHTML='';
+}
+function setSay(html){ $('whSay').innerHTML=html }
+function whSay(html, done){
+  $('whSay').innerHTML=html;
+  narrate(html.replace(/<[^>]+>/g,' '), done);
+}
+function placeShard(btn){
+  if(WH.crate>=CRATES) return;
+  btn.disabled=true; btn.classList.add('gone');
+  const crate=$('whCrates').children[WH.crate];
+  const slot=crate.querySelectorAll('.slots i')[WH.placed];
+  slot.classList.add('full');
+  WH.placed++; crate.querySelector('.clab').textContent=WH.placed;
+  beep(480+WH.placed*70,.07,'square',.045,700); buzz(9);
+  if(WH.placed>=PER){
+    crate.classList.add('done');
+    beep(880,.14,'triangle',.05); buzz([14,26,14]);
+    WH.crate++; WH.placed=0;
+    if(WH.crate<CRATES){
+      whSay(`אַרְגָּז מָלֵא. ${PER} חֲתִיכוֹת.<br>עַכְשָׁו הַבָּא.`);
+      [...$('whCrates').children].forEach((c,i)=>c.classList.toggle('now',i===WH.crate));
+    } else return whDone();
+  }
+}
+function whDone(){
+  $('whTask').innerHTML=`<b>${CRATES}</b> אַרְגָּזִים · <b>${PER}</b> בְּכָל אֶחָד`;
+  const total=CRATES*PER;
+  const seq=Array.from({length:CRATES},(_,i)=>PER*(i+1));
+  markDemo(CRATES,PER);
+  narrateAll([
+    {show:()=>setSay(`{סְפֹר|סִפְרִי} אִתִּי: <b>${seq.join(', ')}</b>.`),
+     text:(S.g==='f'?'ספרי':'ספור')+' איתי. '+seq.join(', ')+'.'},
+    {show:()=>{
+       setSay(`${CRATES} אַרְגָּזִים שֶׁל ${PER} — זֶה <b>${total}</b>.`);
+       $('whTask').innerHTML=`<span class="whEq num">${CRATES} × ${PER} = ${total}</span>`;
+       [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.15,'triangle',.055),i*110));
+       buzz([20,40,20,40,70]);
+     },
+     text:CRATES+' ארגזים של '+PER+'. זה '+total+'.'},
+    {show:()=>setSay(`לְזֶה קוֹרְאִים <b>כֶּפֶל</b>. כּוֹתְבִים אוֹתוֹ כָּךְ:`),
+     text:'לזה קוראים כפל. כותבים אותו ככה: '+CRATES+' כפול '+PER+' שווה '+total+'.'}
+  ], ()=>{ $('whNext').hidden=false });
+}
+$('whNext').onclick=()=>{ nstop(); openStory() };
+$('whSkip').onclick=()=>{ nstop(); openStory() };
+
+/* ---------- 2. why any of this is happening ---------- */
+const STORY=[
+  {img:'emblem', t:'לְאַלּוּף הַזִּירָה הָיְתָה <b>חֲגוֹרָה אַחַת</b>.'},
+  {img:'shards', t:'לַיְלָה אֶחָד הִיא <b>נִשְׁבְּרָה לְעֶשֶׂר חֲתִיכוֹת</b>.'},
+  {img:'ghost',  t:'עֲשָׂרָה לוֹחֲמִים תָּפְסוּ אוֹתָן.<br>כָּל אֶחָד שׁוֹמֵר עַל חֲתִיכָה אַחַת.'},
+  {img:'coach',  t:'מֵהַחֲתִיכוֹת בּוֹנִים <b>מָגֵן</b>.<br>בְּלִי מָגֵן הֵם {יַפִּילוּ אוֹתְךָ|יַפִּילוּ אוֹתָךְ}.'},
+  {img:null,     t:'{תַּחֲזִיר|תַּחֲזִירִי} אֶת עֶשֶׂר הַחֲתִיכוֹת,<br>{וְתִהְיֶה הָאַלּוּף הַבָּא|וְתִהְיִי הָאַלּוּפָה הַבָּאָה}.'}
+];
+let stI=0;
+function openStory(){
+  show('story'); stI=0; stStep();
+}
+function stStep(){
+  const s=STORY[stI];
+  $('stImg').style.visibility = s.img?'visible':'hidden';
+  if(s.img) $('stImg').src=ART[s.img];
+  $('stImg').style.animation='none'; void $('stImg').offsetWidth; $('stImg').style.animation='';
+  $('stTxt').innerHTML=s.t;
+  speak(s.t.replace(/<[^>]+>/g,' '));
+  thud(); buzz(18);
+  [...$('stDots').children].forEach((d,i)=>d.classList.toggle('on',i<=stI));
+  $('stNext').textContent = stI===STORY.length-1 ? 'לַזִּירָה' : 'הַלְאָה';
+}
+function initStoryDots(){
+  const d=$('stDots'); d.innerHTML='';
+  STORY.forEach(()=>d.appendChild(document.createElement('i')));
+}
+$('stNext').onclick=()=>{
+  nstop();
+  stI++;
+  if(stI>=STORY.length){ S.onboard=1; save(); goHome();
+    setTimeout(()=>toast('{לְחַץ|לַחֲצִי} עַל "לְהִלָּחֵם"'),700); return }
+  stStep();
+};
+$('stSkip').onclick=()=>{ nstop(); S.onboard=1; save(); goHome() };
+/* ============================================================
+   OPPONENTS — one per tier, so the fight you get is the maths
+   you are ready for.
+   ============================================================ */
+function meArt(){ return (S.g==='f' && ART.heroine) ? ART.heroine : ART.hero }
+const FOES=[
+  {t:0, key:'i2',  name:'הַתְּאוֹמִים',        power:'עוֹשִׂים כָּל דָּבָר פַּעֲמַיִם',
+   clue:'הַתְּאוֹמִים אָמְרוּ שֶׁמִּישֶׁהוּ שִׁלֵּם לָהֶם. הֵם לֹא יוֹדְעִים מִי.'},
+  {t:1, key:'i10', name:'מְכוֹנַת הָעֶשֶׂר',   power:'סוֹפֶרֶת רַק בַּעֲשָׂרוֹת',
+   clue:'בַּמַּחְסָן נִמְצְאָה כַּרְטִיס כְּנִיסָה שֶׁל מִישֶׁהוּ מֵהָאִרְגּוּן.'},
+  {t:2, key:'i3',  name:'שְׁלוֹשֶׁת הָאֶגְרוֹפִים', power:'מַכָּה שְׁלִישִׁית שֶׁלֹּא רוֹאִים',
+   clue:'הוּא רָאָה אֶת מִי שֶׁשָּׁבַר אֶת הַחֲגוֹרָה. לָבַשׁ מְעִיל אָרֹךְ.'},
+  {t:3, key:'i5',  name:'יַד הַפְּלָדָה',      power:'סוֹפֵר בַּחֲמִישִׁיּוֹת',
+   clue:'הַכַּסֶּפֶת נִפְתְּחָה מִבִּפְנִים. מִישֶׁהוּ כְּבָר הָיָה שָׁם.'},
+  {t:4, key:'i4',  name:'אַרְבַּע זְרוֹעוֹת',   power:'מַכְפִּיל, וְאָז מַכְפִּיל שׁוּב',
+   clue:'הוּא הִתְאַמֵּן פַּעַם עִם הָאַלּוּף הַיָּשָׁן. הֵם רָבוּ.'},
+  {t:5, key:'i8',  name:'שְׁמוֹנֶה הַצְּלָלִים', power:'מִתְפַּצֵּל לִשְׁמוֹנָה',
+   clue:'הַצְּלָלִים לוֹחֲשִׁים שֵׁם. {אַתָּה כִּמְעַט שׁוֹמֵעַ|אַתְּ כִּמְעַט שׁוֹמַעַת} אוֹתוֹ.'},
+  {t:6, key:'i6',  name:'שֵׁשׁ הַשְּׁרִירִים',  power:'חָמֵשׁ מַכּוֹת וְעוֹד אַחַת',
+   clue:'הַחֲגוֹרָה לֹא נִשְׁבְּרָה בִּתְאוּנָה. מִישֶׁהוּ תִּכְנֵן אֶת זֶה.'},
+  {t:7, key:'i9',  name:'תִּשְׁעַת הַזְּנָבוֹת', power:'תָּמִיד אֶחָד פָּחוֹת מֵעֶשֶׂר',
+   clue:'מִי שֶׁתִּכְנֵן רָצָה שֶׁעֶשֶׂר לוֹחֲמִים יִשְׁמְרוּ עַל הַחֲתִיכוֹת.'},
+  {t:8, key:'i7',  name:'שֶׁבַע הַמַּסֵּכוֹת',  power:'מַחְלִיף פָּנִים בְּכָל מַכָּה',
+   clue:'הָאַלּוּף הַיָּשָׁן מֵעוֹלָם לֹא עָזַב אֶת הַבִּנְיָן.'},
+  {t:9, key:'champ',name:'הָאַלּוּף',          power:'הוּא יוֹדֵעַ הַכֹּל',
+   clue:'הוּא שָׁבַר אוֹתָהּ בְּעַצְמוֹ — כְּדֵי לִמְצֹא מִישֶׁהוּ שֶׁיִּלְמַד אוֹתָהּ מֵהַתְחָלָה.'}
+];
+function nextFoe(){ return FOES[Math.min(FOES.length-1, openTier())] }
+
+/* ============================================================
+   FIGHT — the enemy throws a number. You build a shield whose
+   AREA is that number, by dragging rectangles on a grid.
+   Dragging IS multiplying. Two rectangles side by side IS
+   decomposition. Nothing here is a quiz.
+   ============================================================ */
+let COLS=10, ROWS=10;
+let F=null, G=null;
+
+function startFight(foe, again){
+  ac();
+  F={foe, hpMe:100, hpFoe:100, i:0, total:8, combo:0, best:0, blocks:0,
+     score:0, misses:0, learned:[], last:null, over:false, again:!!again};
+  show('fight');
+  $('hudMe').textContent=S.name; $('hudFoe').textContent=foe.name;
+  $('figMe').src=meArt(); $('figFoe').src=ART[foe.key]||ART.champ;
+  $('hpMe').style.width='100%'; $('hpFoe').style.width='100%';
+  $('ghMe').style.width='100%'; $('ghFoe').style.width='100%';
+  $('scoreN').textContent='0';
+  resetBudget(2);
+  sizeGrid(2,2); buildGrid();
+  setTimeout(()=>fxInit('fx'),40);
+  setTimeout(turn,500);
+}
+
+/* the board is only as big as this exercise needs — a 10x10 grid to build
+   2x3 is noise, and on a phone it makes every square tiny */
+/* Columns sit shoulder to shoulder inside a strip; strips stand apart, so
+   a×b reads as a groups of b. On a short phone the gap gives way before the
+   squares do — a cramped strip still reads as a strip, a 14px square does not. */
+const CGAP=3;
+let RGAP=11;
+/* A 10-row board with 11px between every strip costs 99px of screen — more
+   than a short phone has to give. The wide gap matters most on the small
+   shapes a beginner meets, so it is spent there and economised later. */
+function rowGap(){
+  const base = ROWS<=5 ? 11 : ROWS<=7 ? 8 : 5;
+  return window.innerHeight<700 ? Math.max(3, base-3) : base;
+}
+function sizeGrid(a,b){
+  const need=Math.max(a,b)+1;
+  COLS=Math.max(4,Math.min(10,need));
+  ROWS=COLS;
+}
+function buildGrid(){
+  const g=$('grid');
+  RGAP=rowGap();                       /* depends on ROWS, set by sizeGrid */
+  g.style.setProperty('--rg',RGAP+'px');
+  g.style.gridTemplateColumns=`repeat(${COLS},1fr)`;
+  g.innerHTML='';
+  const wrap=$('gridWrap');
+  const pane=$('gridPane');
+
+  /* The cell has to fit BOTH ways. Sizing on width alone made the grid taller
+     than the screen on short phones, and a centred flex box spills its overflow
+     upwards — which is how the objective text ended up on top of the fighters. */
+  const availW=Math.min(pane.clientWidth-4, 360);
+  const cellW=(availW-12-(COLS-1)*CGAP)/COLS;
+
+  const vh=window.innerHeight;
+  let chrome=0;
+  [...pane.children].forEach(el=>{ if(el!==wrap) chrome+=el.offsetHeight+9 });
+  const hud=document.querySelector('.hud');
+  const minStage=Math.min(150, vh*0.17);
+  const pads=42;
+  const availH=vh-(hud?hud.offsetHeight:44)-minStage-pads-chrome;
+  const cellH=(availH-12-(ROWS-1)*RGAP)/ROWS;
+
+  const cell=Math.max(20, Math.min(56, Math.floor(Math.min(cellW,cellH))));
+  g.style.setProperty('--cs',cell+'px');
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const d=document.createElement('div');
+    d.className='cell'; d.dataset.r=r; d.dataset.c=c;
+    d.style.width=cell+'px'; d.style.height=cell+'px';
+    g.appendChild(d);
+  }
+  wrap.style.width=(cell*COLS+(COLS-1)*CGAP+12)+'px';
+  G={cell, el:g};
+  fitGrid();
+}
+/* Predicting the available height is fragile — measure the real overflow and
+   shrink until it fits. Three passes is always enough. */
+function fitGrid(){
+  const fw=document.querySelector('.fw');
+  if(!fw||!G) return;
+  let cell=G.cell, guard=0;
+  while(fw.scrollHeight > fw.clientHeight+1 && cell > 20 && guard++ < 14){
+    cell-=3;
+    [...G.el.children].forEach(d=>{ d.style.width=cell+'px'; d.style.height=cell+'px' });
+    $('gridWrap').style.width=(cell*COLS+(COLS-1)*CGAP+12)+'px';
+    G.el.style.setProperty('--cs',cell+'px');
+  }
+  /* squares are at their floor and it still does not fit — give up the
+     breathing room between strips rather than the squares themselves */
+  while(fw.scrollHeight > fw.clientHeight+1 && RGAP > 3 && guard++ < 24){
+    RGAP-=2; G.el.style.setProperty('--rg',RGAP+'px');
+  }
+  /* last resort on a very small screen with a very big board: smaller
+     squares beat a board that runs off the bottom edge */
+  while(fw.scrollHeight > fw.clientHeight+1 && cell > 16 && guard++ < 34){
+    cell-=2;
+    [...G.el.children].forEach(d=>{ d.style.width=cell+'px'; d.style.height=cell+'px' });
+    $('gridWrap').style.width=(cell*COLS+(COLS-1)*CGAP+12)+'px';
+    G.el.style.setProperty('--cs',cell+'px');
+  }
+  G.cell=cell;
+  drawLabels && F && F.pieces && F.pieces.length && drawLabels();
+}
+const cellAt=(r,c)=>G.el.children[r*COLS+c];
+
+/* ---------- one turn ---------- */
+function turn(){
+  if(!F || F.over) return;
+  if(F.i>=F.total || F.hpFoe<=0 || F.hpMe<=0) return endFight();
+  const [a,b]=pick(F.last);
+  F.cur=[a,b]; F.need=a*b; F.have=0; F.pieces=[]; F.helped=false;
+  F.t0=0; F.how='whole'; F.rung=rungOf(a,b);
+  sizeGrid(a,b); buildGrid();
+  $('needN').textContent=F.need;
+  $('haveN').textContent='0';
+  $('pieces').innerHTML='';
+  $('incoming').hidden=true;
+  if(!shown(a,b)) return demoFirst(a,b);
+  askTurn(a,b);
+}
+function clearGrid(){
+  [...G.el.children].forEach(c=>{c.className='cell'});
+  G.el.querySelectorAll('.gridlbl').forEach(e=>e.remove());
+  $('readout').hidden=true;
+}
+
+/* ---------- demo before demand ---------- */
+function demoFirst(a,b){
+  charge(false);
+  markDemo(a,b);
+  const d=$('demo'); d.hidden=false;
+  $('demoCtl').hidden=true;
+  $('incoming').hidden=true;
+  $('fight').classList.add('demoing');
+  $('gridPane').style.opacity='.25';
+  const line=$('demoLine');
+  line.innerHTML=`תַּרְגִּיל חָדָשׁ: <b>${a} כָּפוּל ${b}</b>.<br>{תִּסְתַּכֵּל|תִּסְתַּכְּלִי} — אֲנִי בּוֹנֶה אוֹתוֹ.`;
+  $('demoCount').textContent='';
+  /* the line stays on screen until the sentence has actually been said */
+  speakThen(`תרגיל חדש. ${a} כפול ${b}. אני בונה אותו, ואפשר להסתכל.`, ()=>{
+    if(!F||F.over) return;
+    d.hidden=true; $('gridPane').style.opacity='1'; line.innerHTML='';
+    paintDemo(a,b);
+  });
+}
+function paintDemo(a,b){ countBuild(a,b,'demo') }
+/* count the rectangle into existence — slow for small, by rows for big */
+function countBuild(a,b,mode){
+  clearGrid();
+  const rows=Math.min(a,ROWS), cols=Math.min(b,COLS), total=rows*cols;
+  const sp = mode==='teach' ? splitFor(a,b) : null;
+  const cut = (sp && sp.hard===b) ? Math.min(sp.parts[0],cols) : 0;
+  const P=pace();
+  /* Always by strip. A shield goes on one plate at a time, and the number
+     that lands with each plate is exactly the count Morris says out loud:
+     four, eight, twelve. Cell-by-cell counting hid the groups. */
+  const byRow = rows>1;
+  const per = byRow ? P.row : (total<=12 ? P.cell : Math.round(P.cell*0.72));
+  let n=0;
+  $('readout').hidden=false; $('readout').classList.remove('words');
+  const put=(r,c)=>{ const el=cellAt(r,c); el.classList.add('locked','tick');
+    el.classList.add(cut && c>=cut ? 'pB' : 'pA') };
+  const finish=()=>{
+    $('readout').innerHTML = cut
+      ? `${cut}×${rows} + ${cols-cut}×${rows} = <b style="color:var(--mint)">${a*b}</b>`
+      : `${cols} × ${rows} = <b style="color:var(--mint)">${a*b}</b>`;
+    [523,659,784].forEach((f,i)=>setTimeout(()=>beep(f,.14,'triangle',.05),i*110));
+    const ctl=$('demoCtl');
+    ctl.hidden=true;
+    /* nothing advances on its own — the child replays it or says they are ready */
+    narrate(cut
+      ? `${cut} כפול ${rows}, ועוד ${cols-cut} כפול ${rows}. ביחד זה ${a*b}.`
+      : `${a} כפול ${b} שווה ${a*b}.`,
+      ()=>{ ctl.hidden=false });
+    $('againBtn').onclick=()=>{ nstop(); ctl.hidden=true; countBuild(a,b,mode) };
+    $('gotItBtn').onclick=()=>{
+      nstop(); ctl.hidden=true; clearGrid();
+      if(!F||F.over) return;
+      if(mode==='demo') askTurn(a,b);
+      else if(F.hpMe<=0||F.i>=F.total) endFight();
+      else turn();
+    };
+  };
+  const step=()=>{
+    if(!F||F.over) return;
+    if(n>=(byRow?rows:total)) return finish();
+    if(byRow){
+      for(let c=0;c<cols;c++) put(n,c);
+      n++; $('readout').textContent=n*cols;
+      beep(400+n*22,.07,'square',.04);
+    }else{
+      put(Math.floor(n/cols), n%cols);
+      n++; $('readout').textContent=n;
+      beep(420+n*14,.06,'square',.04);
+    }
+    setTimeout(step, per);
+  };
+  setTimeout(step, 500);
+}
+/* ---------- the ask ---------- */
+function askTurn(a,b){
+  $('demo').hidden=true;
+  $('gridPane').style.opacity='1';
+  const inc=$('incoming'); inc.hidden=false;
+  $('incN').textContent=F.need;
+  $('incLab').textContent='מַכָּה שֶׁל';
+  beep(180,.28,'sawtooth',.05,120); buzz(20);
+  const rung=F.rung;
+  setObjective(a,b,rung);
+  clearGrid();
+  /* nothing starts until the child says so — no clock runs on confusion */
+  $('fight').classList.remove('demoing');
+  $('readyBtn').hidden=false;
+  $('undoBtn').disabled=true; $('helpBtn').disabled=true;
+  $('readyBtn').onclick=()=>{
+    $('readyBtn').hidden=true;
+    $('undoBtn').disabled=false; $('helpBtn').disabled=false;
+    nstop(); ac(); beep(660,.1,'square',.05,880);
+    F.t0=performance.now();
+    charge(true);
+    if(rung<=1){ showTarget(a,b); speak('סימנתי לך איפה.') }
+  };
+  speak(objectiveSay(a,b,rung));
+}
+function setObjective(a,b,rung){
+  const o=$('objective');
+  o.innerHTML = rung<2
+    ? `{תִּבְנֶה|תִּבְנִי} מָגֵן שֶׁל <b>${F.need}</b> חֲתִיכוֹת — <b>${a}</b> שׁוּרוֹת שֶׁל <b>${b}</b>. סִמַּנְתִּי אֵיפֹה.`
+    : `{תִּבְנֶה|תִּבְנִי} מָגֵן שֶׁל בְּדִיּוּק <b>${F.need}</b> חֲתִיכוֹת. אֶפְשָׁר בְּחֲתִיכָה אַחַת אוֹ בִּשְׁתַּיִם.`;
+  const sp=splitFor(a,b);
+  $('gridHint').innerHTML = (rung===2 && sp)
+    ? `אִם קָשֶׁה: ${sp.say}`
+    : `{תִּמְשֹׁךְ|תִּמְשְׁכִי} אֶצְבַּע עַל הָרֶשֶׁת. אֵין לַחַץ שֶׁל זְמַן.`;
+}
+function objectiveSay(a,b,rung){
+  const v = S.g==='f' ? 'תבני' : 'תבנה';
+  /* the outline is only drawn once the child says they are ready, so the
+     promise to have marked it is made then, not before */
+  return rung<2
+    ? `${v} מגן של ${F.need} חתיכות. ${a} שורות של ${b}.`
+    : `${v} מגן של בדיוק ${F.need} חתיכות.`;
+}
+/* middle rung: the outline is drawn and the child only traces it */
+function showTarget(a,b){
+  const rows=Math.min(a,ROWS), cols=Math.min(b,COLS);
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) cellAt(r,c).classList.add('target');
+  const hand=document.createElement('div'); hand.className='ghosthand';
+  $('grid').appendChild(hand);
+  const x0=6+G.cell/2, y0=6+G.cell/2;
+  const x1=6+(cols-1)*(G.cell+CGAP)+G.cell/2, y1=6+(rows-1)*(G.cell+RGAP)+G.cell/2;
+  let t=0;
+  const anim=()=>{
+    if(!F||F.over||!hand.isConnected) return;
+    t=(t+0.012)%1.7;
+    const k=Math.min(1,t);
+    hand.style.left=(x0+(x1-x0)*k-15)+'px';
+    hand.style.top=(y0+(y1-y0)*k-15)+'px';
+    hand.style.opacity = t>1.3 ? '0' : '1';
+    requestAnimationFrame(anim);
+  };
+  requestAnimationFrame(anim);
+  F.hand=hand;
+}
+
+/* ---------- drag to multiply ---------- */
+let DRAG=null;
+function cellFromPoint(x,y){
+  const el=document.elementFromPoint(x,y);
+  if(el&&el.classList&&el.classList.contains('cell')) return el;
+  return null;
+}
+function gridDown(e){
+  if(!F||F.over||!F.cur||$('demo').hidden===false) return;
+  const p=e.touches?e.touches[0]:e;
+  const el=cellFromPoint(p.clientX,p.clientY);
+  if(!el||el.classList.contains('locked')) return;
+  e.preventDefault();
+  if(F.hand){ F.hand.remove(); F.hand=null }
+  DRAG={r0:+el.dataset.r,c0:+el.dataset.c,r1:+el.dataset.r,c1:+el.dataset.c};
+  paintDrag();
+}
+function gridMove(e){
+  if(!DRAG) return;
+  const p=e.touches?e.touches[0]:e;
+  const el=cellFromPoint(p.clientX,p.clientY);
+  if(!el) return;
+  e.preventDefault();
+  const r=+el.dataset.r, c=+el.dataset.c;
+  if(r!==DRAG.r1||c!==DRAG.c1){ DRAG.r1=r; DRAG.c1=c; paintDrag(); beep(720,.03,'square',.02) }
+}
+function dragBox(){
+  const r0=Math.min(DRAG.r0,DRAG.r1), r1=Math.max(DRAG.r0,DRAG.r1);
+  const c0=Math.min(DRAG.c0,DRAG.c1), c1=Math.max(DRAG.c0,DRAG.c1);
+  return {r0,r1,c0,c1,h:r1-r0+1,w:c1-c0+1};
+}
+function paintDrag(){
+  [...G.el.children].forEach(c=>c.classList.remove('drag','bad'));
+  const b=dragBox();
+  let clash=false;
+  for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++)
+    if(cellAt(r,c).classList.contains('locked')) clash=true;
+  for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++)
+    cellAt(r,c).classList.add(clash?'bad':'drag');
+  const ro=$('readout'); ro.hidden=false;
+  const area=b.w*b.h;
+  const col = clash ? 'var(--red-hi)'
+            : (F.have+area<=F.need ? 'var(--gold-hi)' : 'var(--red-hi)');
+  if(area===1){
+    /* "1 × 1 = 1" carries no information and reads as noise to a child.
+       While the finger sits on one square, show the running count instead. */
+    const now=F.have+1;
+    ro.classList.add('words');
+    ro.innerHTML = `<span>חֲתִיכָה אַחַת</span>
+      <small style="color:${col}">${now} מִתּוֹךְ ${F.need}</small>`;
+  }else{
+    ro.classList.remove('words');
+    ro.innerHTML = `${b.w} × ${b.h} = <b style="color:${col}">${area}</b>`;
+  }
+}
+function gridUp(e){
+  if(!DRAG) return;
+  const b=dragBox(); DRAG=null;
+  [...G.el.children].forEach(c=>c.classList.remove('drag','bad'));
+  $('readout').hidden=true;
+  let clash=false;
+  for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++)
+    if(cellAt(r,c).classList.contains('locked')) clash=true;
+  if(clash){ beep(150,.14,'sawtooth',.05); toast('הַחֲתִיכָה דּוֹרֶכֶת עַל אַחֶרֶת. {תְּבַטֵּל|תְּבַטְּלִי} אוֹ {תִּבְחַר|תִּבְחֲרִי} מָקוֹם אַחֵר.'); return }
+  const area=b.w*b.h;
+  if(F.have+area > F.need){
+    beep(150,.18,'sawtooth',.05); buzz(30);
+    for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++){
+      const el=cellAt(r,c); el.classList.add('bad');
+      setTimeout(()=>el.classList.remove('bad'),450) }
+    toast(`זֶה כְּבָר ${F.have+area}. הַמָּגֵן צָרִיךְ לִהְיוֹת בְּדִיּוּק ${F.need}.`);
+    return;
+  }
+  /* lock the piece in */
+  /* the two colours exist to make a decomposition visible — single squares
+     being counted out are one colour, not an alternating stripe */
+  const half = (area===1 || F.pieces.length===0) ? 'pA' : 'pB';
+  for(let r=b.r0;r<=b.r1;r++) for(let c=b.c0;c<=b.c1;c++){
+    const el=cellAt(r,c); el.classList.remove('target');
+    el.classList.add('locked','tick',half);
+    el.style.animationDelay=(((r-b.r0)+(c-b.c0))*0.018)+'s';
+  }
+  F.pieces.push({...b, area});
+  F.have+=area;
+  $('haveN').textContent=F.have;
+  drawLabels();
+  renderPieces();
+  beep(560+F.pieces.length*90,.09,'square',.045,760); buzz(12);
+  if(F.have!==F.need){
+    const left=F.need-F.have;
+    countEcho(area===1 ? `${F.have}` : `${F.have} מִתּוֹךְ ${F.need}`);
+    if(area===1 && F.pieces.length>=3)
+      $('gridHint').innerHTML=`{אַתָּה סוֹפֵר|אַתְּ סוֹפֶרֶת} אַחַת-אַחַת — זֶה בְּסֵדֶר.
+        עוֹד <b style="color:var(--gold-hi)">${left}</b>.`;
+  }
+  if(F.have===F.need) setTimeout(()=>resolveTurn(true),320);
+}
+/* a short, calm confirmation of where the count stands */
+function countEcho(txt){
+  const ro=$('readout');
+  ro.classList.add('words');
+  ro.innerHTML=`<span>${txt}</span>`;
+  ro.hidden=false;
+  clearTimeout(ro._t);
+  ro._t=setTimeout(()=>{ ro.hidden=true; ro.classList.remove('words') },850);
+}
+function drawLabels(){
+  G.el.querySelectorAll('.gridlbl').forEach(e=>e.remove());
+  F.pieces.forEach(p=>{
+    const l=document.createElement('div'); l.className='gridlbl';
+    if(p.area===1) return;      /* a single square labels itself */
+    l.textContent=`${p.w}×${p.h}=${p.area}`;
+    const w=p.w*G.cell+(p.w-1)*CGAP, h=p.h*G.cell+(p.h-1)*RGAP;
+    const boardW=G.cell*COLS+(COLS-1)*CGAP+10;
+    let cx=6+p.c0*(G.cell+CGAP)+w/2;
+    cx=Math.max(34,Math.min(boardW-34,cx));
+    l.style.left=cx+'px';
+    l.style.top=(6+p.r0*(G.cell+RGAP)+h/2)+'px';
+    l.style.transform='translate(-50%,-50%)';
+    G.el.appendChild(l);
+  });
+}
+function renderPieces(){
+  const h=$('pieces'); h.innerHTML='';
+  F.pieces.forEach((p,i)=>{
+    if(i){ const s=document.createElement('span'); s.className='piece plus'; s.textContent='+'; h.appendChild(s) }
+    const e=document.createElement('span'); e.className='piece';
+    e.textContent = p.area===1 ? '1' : `${p.w}×${p.h}=${p.area}`;
+    h.appendChild(e);
+  });
+  if(F.pieces.length>1){
+    const s=document.createElement('span'); s.className='piece plus'; s.textContent='=';
+    h.appendChild(s);
+    const e=document.createElement('span'); e.className='piece';
+    e.style.background='rgba(245,185,59,.14)'; e.style.borderColor='rgba(245,185,59,.5)';
+    e.style.color='var(--gold-hi)'; e.textContent=F.have; h.appendChild(e);
+  }
+}
+function undoPiece(){
+  if(!F||!F.pieces||!F.pieces.length) return;
+  const p=F.pieces.pop();
+  for(let r=p.r0;r<=p.r1;r++) for(let c=p.c0;c<=p.c1;c++)
+    cellAt(r,c).className='cell';
+  F.have-=p.area; $('haveN').textContent=F.have;
+  drawLabels(); renderPieces(); beep(240,.09,'square',.04);
+}
+function helpMe(){
+  if(!F||!F.cur) return;
+  const [a,b]=F.cur, sp=splitFor(a,b);
+  F.helped=true; F.how='helped';
+  if(sp){
+    const other=sp.other, [p,q]=sp.parts;
+    $('gridHint').innerHTML=
+      `תִּבְנֶה שְׁתֵּי חֲתִיכוֹת: <b style="color:var(--gold-hi)">${other}×${p}</b>
+       וְעוֹד <b style="color:var(--gold-hi)">${other}×${q}</b>.`;
+    speak(`תבנה ${other} כפול ${p}, ועוד ${other} כפול ${q}. ביחד זה ${a*b}.`);
+  }else{
+    $('gridHint').innerHTML=`תִּסְפֹּר: מָגֵן שֶׁל <b style="color:var(--gold-hi)">${F.need}</b> מִשְׁבָּצוֹת.`;
+    speak(`תבנה מגן של ${F.need} משבצות.`);
+  }
+  toast('הָרֶמֶז לֹא נִסְפָּר כִּידִיעָה');
+}
+
+/* ---------- resolve ---------- */
+function resolveTurn(blocked){
+  if(!F||F.over) return;
+  if(F.hand){ F.hand.remove(); F.hand=null }
+  $('readyBtn').hidden=true;
+  $('incoming').hidden=true; $('incoming').classList.remove('charge');
+  const [a,b]=F.cur;
+  const ms=performance.now()-F.t0;
+  const st=$('stage');
+  const how = F.helped ? 'helped' : (F.pieces.length>1 ? 'split' : 'whole');
+  const before=lvl(a,b);
+
+  if(blocked){
+    record(a,b,true,ms,how);
+    const after=lvl(a,b);
+    if(after>before) F.learned.push({a,b,l:after});
+    F.blocks++; F.combo++; F.best=Math.max(F.best,F.combo);
+    const base = F.pieces.length>1 ? 14 : 20;
+    const dmg = Math.round(base*(1+Math.min(.4,Math.max(0,F.combo-2)*.1)));
+    F.hpFoe=Math.max(0,F.hpFoe-dmg);
+    const pts=Math.round(F.need*(F.helped?1:2))*10;
+    F.score+=pts;
+    const sc=$('scoreN'); sc.textContent=F.score.toLocaleString('en-US');
+    sc.classList.remove('bump'); void sc.offsetWidth; sc.classList.add('bump');
+    punchLand(true, ()=>{
+      if(!F||F.over) return;
+      st.classList.remove('hit-foe'); void st.offsetWidth; st.classList.add('hit-foe');
+      st.classList.remove('flash'); void st.offsetWidth; st.classList.add('flash');
+      floater('-'+dmg,'#FF7A8C','left'); floater('+'+pts,'#F5B93B','right');
+      $('hpFoe').style.width=F.hpFoe+'%';
+      setTimeout(()=>$('ghFoe').style.width=F.hpFoe+'%',10);
+    });
+    bumpRung(a,b);
+    banner(F.pieces.length>1?'{פֵּרַקְתָּ|פֵּרַקְתְּ} אוֹתוֹ!':'{חָסַמְתָּ|חָסַמְתְּ}!');
+    F.narrating=true;
+    narrate(F.pieces.length>1
+      ? `${F.pieces.map(p=>p.area).join(' ועוד ')} זה ${F.need}. ${S.g==='f'?'חסמת':'חסמת'}.`
+      : `${a} כפול ${b} זה ${F.need}.`,
+      ()=>{ if(!F||F.over) return; F.narrating=false;
+        $('answers') && 0;
+        if(F.hpFoe<=0||F.i>=F.total) endFight(); else turn() });
+  }else{
+    record(a,b,false,ms,how);
+    F.misses++; F.combo=0;
+    F.hpMe=Math.max(0,F.hpMe-16);
+    punchLand(false, ()=>{
+      if(!F||F.over) return;
+      st.classList.remove('hit-me'); void st.offsetWidth; st.classList.add('hit-me');
+      const fw=document.querySelector('.fw');
+      fw.classList.add('shake'); setTimeout(()=>fw.classList.remove('shake'),340);
+      $('hpMe').style.width=F.hpMe+'%';
+      setTimeout(()=>$('ghMe').style.width=F.hpMe+'%',10);
+      banner('{חָטַפְתָּ|חָטַפְתְּ}');
+    });
+    F.last=[a,b]; F.i++;
+    return setTimeout(()=>teachAfterMiss(a,b),1250);
+  }
+  F.last=[a,b]; F.i++;
+  /* the follow-on is driven by the narration, not by a fixed delay */
+  if(!F.narrating) setTimeout(()=>{ if(!F||F.over) return;
+    if(F.hpFoe<=0||F.i>=F.total) endFight(); else turn() },1150);
+}
+/* ---------- the blow ----------
+   He pulls back and STAYS pulled back — there is no clock in this arena,
+   so the threat has to be a held pose, not a countdown. */
+function charge(on){
+  const f=$('figFoe'); if(!f) return;
+  f.classList.toggle('charging', !!on);
+}
+/* he throws; the fist crosses the screen; the shield takes it or it does not */
+function punchLand(blocked, done){
+  const st=$('stage'), f=$('figFoe'), wrap=$('gridWrap'), g=$('grid');
+  charge(false);
+  if(f){ f.classList.remove('throw'); void f.offsetWidth; f.classList.add('throw') }
+  const fist=document.createElement('div');
+  fist.className='fist'; fist.textContent='\u{1F44A}';
+  st && st.appendChild(fist);
+  setTimeout(()=>fist.remove(), 380);
+  thud();
+  /* the moment of contact */
+  setTimeout(()=>{
+    if(!F||F.over) return;
+    if(blocked){
+      wrap.classList.remove('impact'); void wrap.offsetWidth; wrap.classList.add('impact');
+      g.classList.remove('lit'); void g.offsetWidth; g.classList.add('lit');
+      burst(.5,.62,'#FFD97A',30,4); hitstop(90); buzz([18,28,22]);
+      beep(210,.10,'square',.06,150);
+    }else{
+      wrap.classList.remove('broke'); void wrap.offsetWidth; wrap.classList.add('broke');
+      [...g.children].filter(c=>c.classList.contains('locked'))
+        .forEach((c,i)=>setTimeout(()=>c.classList.add('shatter'), i*22));
+      burst(.5,.62,'#FF7A8C',26,4); buzz([28,45,28]);
+      beep(120,.26,'sawtooth',.07,60);
+    }
+    done && done();
+  }, 330);
+}
+function banner(t){
+  const st=$('stage');
+  const el=document.createElement('div'); el.className='banner'; el.textContent=t;
+  st.appendChild(el); setTimeout(()=>el.remove(),1700);
+}
+/* a miss is never a dead end — the game builds it for him, then moves on */
+function teachAfterMiss(a,b){
+  if(!F||F.over) return;
+  charge(false);
+  const d=$('demo'); d.hidden=false;
+  $('demoCtl').hidden=true;
+  $('gridPane').style.opacity='.25';
+  const sp=splitFor(a,b);
+  $('demoLine').innerHTML = sp
+    ? `<b>${a} × ${b}</b><br>${sp.say}`
+    : `<b>${a} × ${b}</b><br>{נִסְפֹּר|נִסְפֹּר} אוֹתוֹ יַחַד.`;
+  $('demoCount').textContent='';
+  speakThen(`${a} כפול ${b}. ` + (sp?sp.say:'נספור אותו יחד.'), ()=>{
+    if(!F||F.over) return;
+    d.hidden=true; $('gridPane').style.opacity='1'; $('demoLine').innerHTML='';
+    paintTeach(a,b);
+  });
+}
+function paintTeach(a,b){ countBuild(a,b,'teach') }
+
+/* ---------- end ---------- */
+function endFight(){
+  if(!F||F.over) return;
+  F.over=true;
+  const won=F.hpFoe<=0;
+  S.score+=F.score; if(F.score>S.best) S.best=F.score;
+  S.sessions++;
+  if(won && !F.again){
+    S.beat[F.foe.key]=(S.beat[F.foe.key]||0)+1;
+    if(S.clues<FOES.length) S.clues=Math.max(S.clues, FOES.indexOf(F.foe)+1);
+  }
+  save();
+  show('result');
+  $('resTitle').innerHTML = won?'{נִצַּחְתָּ|נִצַּחְתְּ}':'עוֹד סִבּוּב';
+  $('resTitle').style.color = won?'var(--gold)':'var(--chalk)';
+  $('resSub').textContent = won
+    ? `{הִפַּלְתָּ|הִפַּלְתְּ} אֶת ${F.foe.name}. {הֶחְזַרְתָּ|הֶחְזַרְתְּ} עוֹד חֲתִיכָה מֵהַחֲגוֹרָה.`
+    : `הוּא עוֹד עוֹמֵד. הַכֹּל נִשְׁמַר — אֶפְשָׁר לְנַסּוֹת שׁוּב מָתַי שֶׁבָּא לְךָ.`;
+  $('resClue').hidden=!won;
+  if(won) $('resClueTxt').textContent=F.foe.clue;
+  $('rsScore').textContent=F.score.toLocaleString('en-US');
+  $('rsBlocks').textContent=F.blocks;
+  $('rsCombo').textContent=F.best;
+  const rows=$('resLearnedRows');
+  $('resLearned').hidden=!F.learned.length;
+  rows.innerHTML=F.learned.slice(0,6).map(x=>{
+    const t=x.l>=5?'{יוֹדֵעַ|יוֹדַעַת} בְּעַל פֶּה':x.l>=3?'{מֵבִין וּבוֹנֶה|מְבִינָה וּבוֹנָה} לְבַד':'{מַתְחִיל|מַתְחִילָה} לָדַעַת';
+    const c=x.l>=5?'var(--mint)':x.l>=3?'var(--blue-hi)':'var(--chalk-2)';
+    return `<div class="lrow"><span class="f">${x.a} × ${x.b} = ${x.a*x.b}</span>
+      <span class="t" style="color:${c}">${t}</span></div>`}).join('');
+  if(won){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.16,'triangle',.06),i*110));
+    buzz([30,60,30,60,90]);
+    const fl=document.createElement('div'); fl.className='koflash';
+    document.body.appendChild(fl); setTimeout(()=>fl.remove(),800);
+  } else beep(160,.4,'sawtooth',.06,90);
+}
+
+/* ============================================================
+   HOME — one screen, one button
+   ============================================================ */
+function show(id){
+  gateHide();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  $(id).classList.add('on'); window.scrollTo(0,0);
+}
+function goHome(){
+  show('home');
+  const foe=nextFoe(), t=openTier();
+  $('hsMe').src=meArt(); $('hsFoe').src=ART[foe.key]||ART.champ;
+  $('hsCoach').src=ART.coach;
+  $('hsFoe').classList.toggle('known', !!S.beat[foe.key]);
+  $('hsName').textContent=foe.name;
+  $('hsPower').textContent=foe.power;
+  $('hsFloor').textContent='קוֹמָה '+(t+1)+' מִתּוֹךְ 10';
+  const bits=$('beltBits'); bits.innerHTML='';
+  for(let i=0;i<10;i++){ const e=document.createElement('i');
+    if(i<S.clues) e.className='got'; bits.appendChild(e) }
+  const mem=memorised(), und=understood();
+  /* the coach talks to the child — never the parent-view wording */
+  $('hsSay').innerHTML = S.sessions===0
+    ? 'כָּל דָּבָר חָדָשׁ — אֲנִי בּוֹנֶה אוֹתוֹ קֹדֶם, {וְאַתָּה מִסְתַּכֵּל|וְאַתְּ מִסְתַּכֶּלֶת}. {בּוֹא|בּוֹאִי}.'
+    : (mem>0
+       ? `${mem} תַּרְגִּילִים כְּבָר יוֹשְׁבִים לְךָ בְּעַל פֶּה. עַכְשָׁו ${foe.name}.`
+       : `עַכְשָׁו ${foe.name}. ${foe.power}.`);
+  save();
+}
+$('goFight').onclick=()=>{ ac(); startFight(nextFoe()) };
+$('resGo').onclick=()=>goHome();
+$('resAgain').onclick=()=>{ if(F&&F.foe) startFight(F.foe,true) };
+
+/* drawer */
+$('menuBtn').onclick=()=>{
+  const d=$('drawer');
+  $('drawerIn').innerHTML=`
+    <h3>תַּפְרִיט</h3>
+    <button class="drow" id="mSound"><span class="di">&#9834;</span>
+      <div><b>צְלִילִים</b><small>${S.sound?'דּוֹלְקִים':'כְּבוּיִים'}</small></div></button>
+    <button class="drow" id="mTts"><span class="di">&#128266;</span>
+      <div><b>הַקְרָאָה בְּקוֹל</b><small>${S.tts?'דּוֹלֶקֶת':'כְּבוּיָה'}</small></div></button>
+    <button class="drow" id="mVoice"><span class="di">&#127908;</span>
+      <div><b>הַקּוֹל שֶׁל מוֹרִיס</b><small>${(()=>{const l=heVoices();
+        if(!l.length) return 'אֵין קוֹל עִבְרִי בַּמַּכְשִׁיר';
+        const v=pickVoice(); return (v?v.name:'—')+' · '+l.length+' לְבְחִירָה'})()}</small></div></button>
+    <button class="drow" id="mPace"><span class="di">&#9202;</span>
+      <div><b>קֶצֶב הַהַסְבֵּרִים</b><small>${S.pace==='slow'?'רָגוּעַ — זְמַן לִסְפֹּר יַחַד':'רָגִיל — מָהִיר יוֹתֵר'}</small></div></button>
+    <button class="drow" id="mParent"><span class="di">&#9649;</span>
+      <div><b>מַבָּט הוֹרֶה</b><small>מה הוא באמת יודע, ומה חסר</small></div></button>
+    <button class="drow" id="mStory"><span class="di">&#9635;</span>
+      <div><b>הַסִּפּוּר עַד עַכְשָׁו</b><small>${S.clues} רְמָזִים מִתּוֹךְ 10</small></div></button>
+    <button class="drow" id="mIntro"><span class="di">&#8635;</span>
+      <div><b>לִרְאוֹת שׁוּב אֵיךְ מַתְחִילִים</b><small>הַמַּחְסָן וְהַסִּפּוּר מֵהַהַתְחָלָה</small></div></button>
+    <button class="drow" id="mWho"><span class="di">&#9787;</span>
+      <div><b>לְהַחְלִיף דְּמוּת אוֹ שֵׁם</b><small>${S.name} · ${S.g==='f'?'לוֹחֶמֶת':'לוֹחֵם'}</small></div></button>
+    <button class="drow" id="mReset"><span class="di">&#9888;</span>
+      <div><b>לְאַפֵּס הַכֹּל וְלַחֲזֹר לַפְּתִיחַ</b><small>מוחק הכל ומתחיל מהמסך הראשון</small></div></button>
+    <button class="btn ghost" id="mClose" style="margin-top:8px">סְגֹר</button>`;
+  d.classList.add('on');
+  $('mClose').onclick=()=>d.classList.remove('on');
+  $('mSound').onclick=()=>{S.sound=!S.sound;save();$('menuBtn').click()};
+  $('mTts').onclick=()=>{S.tts=!S.tts;save();$('menuBtn').click()};
+  $('mPace').onclick=()=>{S.pace=(S.pace==='slow'?'normal':'slow');save();$('menuBtn').click()};
+  $('mVoice').onclick=()=>openVoicePicker();
+  $('mIntro').onclick=()=>{ closeDrawer(); replayIntro() };
+  $('mReset').onclick=()=>{ closeDrawer(); wipeAll() };
+  $('mWho').onclick=()=>{ closeDrawer(); openPick() };
+  $('mParent').onclick=()=>{d.classList.remove('on');openParent()};
+  $('mStory').onclick=()=>{
+    $('drawerIn').innerHTML=`<h3>הַסִּפּוּר עַד עַכְשָׁו</h3>`+
+      (S.clues===0
+        ? `<p style="font-size:15px;color:var(--chalk-2);line-height:1.6">
+           הַחֲגוֹרָה שֶׁל הָאַלּוּף נִשְׁבְּרָה לְעֶשֶׂר חֲתִיכוֹת.
+           כָּל לוֹחֵם בַּבִּנְיָן שׁוֹמֵר עַל אַחַת.
+           <b>כָּל חֲתִיכָה שֶׁתַּחֲזִיר תַּגִּיד לְךָ מַשֶּׁהוּ.</b></p>`
+        : FOES.slice(0,S.clues).map((f,i)=>
+           `<div class="drow" style="cursor:default"><span class="di">${i+1}</span>
+            <div><b>${f.name}</b><small>${f.clue}</small></div></div>`).join(''))+
+      `<button class="btn ghost" id="mClose2" style="margin-top:10px">סְגֹר</button>`;
+    $('mClose2').onclick=()=>d.classList.remove('on');
+  };
+};
+$('drawer').onclick=e=>{ if(e.target.id==='drawer') $('drawer').classList.remove('on') };
+
+/* ---------- choose the least robotic Hebrew voice on THIS device ---------- */
+function openVoicePicker(){
+  const list=heVoices();
+  const d=$('drawer');
+  if(!list.length){
+    $('drawerIn').innerHTML=`<h3>הַקּוֹל שֶׁל מוֹרִיס</h3>
+      <p class="dnote">אֵין קוֹל עִבְרִי מֻתְקָן בַּמַּכְשִׁיר הַזֶּה, אָז הַהַקְרָאָה לֹא תַּעֲבֹד.<br>
+      בְּאַנְדְּרוֹאִיד אֶפְשָׁר לְהוֹסִיף בְּהַגְדָּרוֹת ← שָׂפָה וְקֶלֶט ← פֶּלֶט דִּבּוּר.</p>
+      <button class="btn ghost" id="vClose">סְגֹר</button>`;
+    d.classList.add('on'); $('vClose').onclick=closeDrawer; return;
+  }
+  const cur=pickVoice();
+  $('drawerIn').innerHTML=`<h3>הַקּוֹל שֶׁל מוֹרִיס</h3>
+    <p class="dnote">{תִּלְחַץ|תִּלְחֲצִי} עַל קוֹל כְּדֵי לִשְׁמֹעַ אוֹתוֹ. {תִּבְחַר|תִּבְחֲרִי} אֶת הַנָּעִים בְּיוֹתֵר.</p>
+    ${list.map((v,i)=>`<button class="drow vrow" data-i="${i}">
+      <span class="di">${v===cur?'&#10003;':'&#9834;'}</span>
+      <div><b>${v.name}</b><small>${v.localService?'בַּמַּכְשִׁיר':'מֵהָרֶשֶׁת'}</small></div></button>`).join('')}
+    <button class="btn ghost" id="vClose" style="margin-top:6px">סְגֹר</button>`;
+  d.classList.add('on');
+  $('vClose').onclick=closeDrawer;
+  $('drawerIn').querySelectorAll('.vrow').forEach(btn=>{
+    btn.onclick=()=>{
+      const v=list[+btn.dataset.i];
+      S.voice=v.voiceURI||v.name; save();
+      nstop();
+      narrate('שָׁלוֹם. אֲנִי מוֹרִיס, וַאֲנִי אַסְבִּיר לְךָ הַכֹּל לְאַט.');
+      openVoicePicker();
+    };
+  });
+}
+
+/* ---------- pause: leave a fight without losing what was learned ---------- */
+function closeDrawer(){ $('drawer').classList.remove('on') }
+$('pauseBtn').onclick=()=>{
+  const d=$('drawer');
+  $('drawerIn').innerHTML=`
+    <h3>הַפְסָקָה</h3>
+    <p class="dnote">כָּל מָה {שֶׁלָּמַדְתָּ|שֶׁלָּמַדְתְּ} נִשְׁמַר גַּם אִם {תֵּצֵא|תֵּצְאִי} עַכְשָׁו.</p>
+    <button class="drow" id="pResume"><span class="di">&#9654;</span>
+      <div><b>לַחֲזֹר לַקְּרָב</b><small>מַמְשִׁיכִים מֵאֵיפֹה שֶׁעָצַרְנוּ</small></div></button>
+    <button class="drow" id="pQuit"><span class="di">&#8617;</span>
+      <div><b>לָצֵאת לַזִּירָה</b><small>הַקְּרָב יִסְתַּיֵּם, הַהִתְקַדְּמוּת נִשְׁמֶרֶת</small></div></button>
+    <button class="drow" id="pSound2"><span class="di">&#9834;</span>
+      <div><b>צְלִילִים</b><small>${S.sound?'דּוֹלְקִים':'כְּבוּיִים'}</small></div></button>
+    <button class="drow" id="pTts2"><span class="di">&#128266;</span>
+      <div><b>הַקְרָאָה בְּקוֹל</b><small>${S.tts?'דּוֹלֶקֶת':'כְּבוּיָה'}</small></div></button>`;
+  d.classList.add('on');
+  $('pResume').onclick=closeDrawer;
+  $('pQuit').onclick=()=>{ closeDrawer(); leaveFight() };
+  $('pSound2').onclick=()=>{ S.sound=!S.sound; save(); $('pauseBtn').click() };
+  $('pTts2').onclick=()=>{ S.tts=!S.tts; save(); $('pauseBtn').click() };
+};
+function leaveFight(){
+  if(F){ F.over=true; if(F.hand){F.hand.remove(); F.hand=null} }
+  nstop();
+  $('demo').hidden=true; $('demoCtl').hidden=true;
+  $('readyBtn').hidden=true; $('incoming').hidden=true;
+  $('gridPane').style.opacity='1';
+  if(F && F.blocks) { S.sessions++; S.score+=F.score }
+  save(); F=null;
+  goHome();
+}
+
+/* ============================================================
+   PARENT VIEW
+   ============================================================ */
+function openParent(){
+  show('parent');
+  const m=$('mat'); m.innerHTML='<div class="h"></div>';
+  for(let c=1;c<=10;c++) m.insertAdjacentHTML('beforeend',`<div class="h">${c}</div>`);
+  for(let r=1;r<=10;r++){
+    m.insertAdjacentHTML('beforeend',`<div class="h">${r}</div>`);
+    for(let c=1;c<=10;c++){
+      const L=lvl(r,c); const f=S.facts[fk(r,c)];
+      const cls = L>=5?'l5':L>=4?'l4':L>=3?'l3':(f&&f.w>f.c)?'l2':L>=1?'l1':'';
+      m.insertAdjacentHTML('beforeend',`<div class="c ${cls}" title="${r}×${c}"></div>`);
+    }
+  }
+  let ms=0,n=0;
+  for(const k in S.facts){const f=S.facts[k]; const v=medianMs(f); if(v){ms+=v;n++}}
+  const acc=(S.totC+S.totW)?Math.round(S.totC/(S.totC+S.totW)*100):0;
+  const tested=Object.values(S.facts).filter(f=>f.s>0).length;
+  $('pStats').innerHTML=[
+    ['יודע בעל פה', memorised()+' / 100'],
+    ['מבין ובונה לבד', understood()+' / 100'],
+    ['נבדקו בפועל', tested+' / 100'],
+    ['זמן תגובה חציוני', n?((ms/n)/1000).toFixed(1)+' שנ\'':'—'],
+    ['אחוז נכונות', acc+'%'],
+    ['סיבובים', S.sessions]
+  ].map(([a,b])=>`<div class="prow"><span>${a}</span><b>${b}</b></div>`).join('');
+
+  const open=openTier();
+  $('pTiers').innerHTML=TIERS.map((t,i)=>{
+    const p=Math.round(tierSolid(i)*100);
+    const cls=i<open?'done':i===open?'now':'wait';
+    return `<div class="tier ${cls}"><span class="tn">${t.short.replace('× ','×')}</span>
+      <div style="flex:1"><b>${t.name}</b><small>${t.why}</small>
+      <div class="bar" style="margin-top:6px"><i style="width:${p}%"></i></div></div></div>`;
+  }).join('');
+
+  const weak=[];
+  for(let a=1;a<=10;a++) for(let b=1;b<=10;b++){
+    const f=S.facts[fk(a,b)]; if(!f||!f.s) continue;
+    const err=f.w/f.s, med=medianMs(f), L=lvl(a,b);
+    let why=null, sc=0;
+    if(err>=.34){why=`טועה ${f.w} מתוך ${f.s}`; sc=100+err*100}
+    else if(med>=5000){why=`נכון אבל לאט (${(med/1000).toFixed(1)} שנ')`; sc=60+med/1000}
+    else if(L<3 && f.s>=2){why='עדיין בונה, לא שולף'; sc=40}
+    if(why) weak.push({a,b,why,sc});
+  }
+  weak.sort((x,y)=>y.sc-x.sc);
+  $('pWeak').innerHTML = weak.length
+    ? weak.slice(0,10).map(x=>`<div class="prow"><b>${x.a} × ${x.b} = ${x.a*x.b}</b>
+       <span style="font-size:12.5px;color:var(--faint)">${x.why}</span></div>`).join('')
+    : `<div class="prow"><span style="font-size:13px;color:var(--faint)">אין עדיין חור בולט. או שהכל יציב, או שעוד לא נבדק מספיק.</span></div>`;
+}
+$('pBack').onclick=()=>goHome();
+/* Browser confirm() is silently blocked inside a sandboxed frame — it returns
+   false without ever showing, so the button appeared dead. This asks in-app. */
+function askConfirm(title, msg, yesLabel, danger, onYes){
+  const d=$('drawer');
+  $('drawerIn').innerHTML=`<div class="confirm">
+    <h3>${title}</h3>
+    <p class="cmsg">${msg}</p>
+    <div class="crow">
+      <button class="btn ghost" id="cNo">ביטול</button>
+      <button class="btn ${danger?'danger':'primary'}" id="cYes">${yesLabel}</button>
+    </div></div>`;
+  d.classList.add('on');
+  $('cNo').onclick=()=>d.classList.remove('on');
+  $('cYes').onclick=()=>{ d.classList.remove('on'); onYes() };
+}
+$('pRestart').onclick=()=>askConfirm(
+  'להתחיל את הסיפור מחדש?',
+  'הקומות, הרמזים והניקוד יתאפסו, והמסע יתחיל שוב מהתאומים.<br>' +
+  '<b>כל מה שהוא כבר יודע יישמר</b> — הרמות, המדידות והקצב לא ייפגעו.',
+  'כן, להתחיל מחדש', false, ()=>{
+    S.beat={}; S.clues=0; S.score=0; S.best=0; S.sessions=0;
+    save(); goHome(); toast('הַמַּסָּע מַתְחִיל מֵחָדָשׁ');
+  });
+function wipeAll(){ askConfirm(
+  'למחוק הכל ולהתחיל מהפתיח?',
+  'זה מוחק גם את כל מה שנמדד — הרמות, ההיסטוריה וזמני התגובה,<br>' +
+  'והמשחק יתחיל שוב ממסך הפתיחה.<br><b>אין דרך לשחזר.</b>',
+  'כן, למחוק ולהתחיל', true, ()=>{
+    try{ localStorage.removeItem(KEY) }catch(e){}
+    S=blank(); save();
+    /* rebuild in place rather than reloading — more reliable in a frame.
+       A wipe returns to the very first screen the child ever saw, not to
+       the avatar picker: the title, then the warehouse, then the story. */
+    $('fname').value='';
+    startGenderSweep && regender();
+    restartFromTitle();
+  }) }
+$('pReset').onclick=wipeAll;
+
+/* replay the opening without losing anything the child has learned */
+let INTRO_REPLAY=false;
+function replayIntro(){
+  INTRO_REPLAY=true;
+  nstop(); F=null;
+  document.querySelectorAll('.drawer.on').forEach(d=>d.classList.remove('on'));
+  show('title'); playTitle();
+}
+
+/* the true beginning — the opening titles, exactly as on a first visit */
+function restartFromTitle(){
+  nstop();
+  ['fight','home','parent'].forEach(id=>{ const e=$(id); if(e) e.classList.remove('on') });
+  document.querySelectorAll('.drawer.on').forEach(d=>d.classList.remove('on'));
+  F=null;
+  show('title');
+  playTitle();
+}
+
+/* ---------- grid input wiring ---------- */
+const gw=$('gridWrap');
+gw.addEventListener('pointerdown',gridDown);
+window.addEventListener('pointermove',gridMove,{passive:false});
+window.addEventListener('pointerup',gridUp);
+window.addEventListener('pointercancel',()=>{DRAG=null;
+  [...($('grid').children||[])].forEach(c=>c.classList.remove('drag','bad'));
+  $('readout').hidden=true});
+$('undoBtn').onclick=undoPiece;
+$('helpBtn').onclick=helpMe;
+
+/* ============================================================
+   TITLE + BOOT
+   ============================================================ */
+const TT={p:[],x:null,w:0,h:0,raf:0};
+function tfx(){
+  const c=$('ttlFx'); const r=c.getBoundingClientRect();
+  const d=Math.min(2,devicePixelRatio||1);
+  c.width=r.width*d; c.height=r.height*d; TT.w=r.width; TT.h=r.height;
+  TT.x=c.getContext('2d'); TT.x.setTransform(d,0,0,d,0,0);
+}
+function tburst(px,py,n,sp,cols){
+  if(!TT.x) return;
+  const x=px*TT.w,y=py*TT.h;
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=(.4+Math.random())*sp;
+    TT.p.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.2,life:1,
+      dec:.008+Math.random()*.013,r:1.4+Math.random()*3.4,
+      c:cols[(Math.random()*cols.length)|0]})}
+  if(!TT.raf) TT.raf=requestAnimationFrame(tloop);
+}
+function tloop(){
+  const x=TT.x; if(!x){TT.raf=0;return}
+  x.clearRect(0,0,TT.w,TT.h);
+  for(let i=TT.p.length-1;i>=0;i--){
+    const p=TT.p[i]; p.life-=p.dec;
+    if(p.life<=0){TT.p.splice(i,1);continue}
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.06;p.vx*=.99;
+    x.globalAlpha=Math.max(0,p.life);x.fillStyle=p.c;
+    x.beginPath();x.arc(p.x,p.y,p.r*p.life,0,6.283);x.fill();
+  }
+  x.globalAlpha=1;
+  TT.raf=TT.p.length?requestAnimationFrame(tloop):0;
+}
+let ttlT=[];
+function playTitle(){
+  ttlT.forEach(clearTimeout); ttlT=[];
+  show('title');
+  $('ttlBelt').src=ART.emblem;
+  ['ttlBelt','ttlLogo','ttlSub','ttlTap'].forEach(id=>$(id).classList.remove('in','crack'));
+  $('ring1').classList.remove('go'); $('ring2').classList.remove('go');
+  setTimeout(tfx,40);
+  const T=(ms,fn)=>ttlT.push(setTimeout(fn,ms));
+  T(120,()=>{ $('ttlBelt').classList.add('in'); beep(180,.5,'sine',.05,700) });
+  T(560,()=>{ $('ring1').classList.add('go'); thud(); buzz(30) });
+  T(1150,()=>{
+    $('ttlBelt').classList.remove('in'); void $('ttlBelt').offsetWidth;
+    $('ttlBelt').classList.add('crack'); $('ring2').classList.add('go');
+    tburst(.5,.42,90,7,['#FFD97A','#F5B93B','#FFF3D0','#FF7A8C']);
+    thud(); buzz([70,50,110]); beep(90,.55,'sawtooth',.09,45);
+  });
+  T(1900,()=>{ $('ttlLogo').classList.add('in');
+    tburst(.5,.56,34,4.4,['#79A6FF','#2E6BFF','#EAEDF6']); thud(); buzz(50);
+    [523,784,1046].forEach((f,i)=>T(i*90,()=>beep(f,.16,'triangle',.055))) });
+  T(2400,()=>$('ttlSub').classList.add('in'));
+  T(2800,()=>{ $('ttlTap').classList.add('in') });
+  T(5200,()=>{ if($('title').classList.contains('on')) endTitle() });
+}
+function endTitle(){
+  ttlT.forEach(clearTimeout); ttlT=[];
+  cancelAnimationFrame(TT.raf); TT.raf=0; TT.p.length=0;
+  if(INTRO_REPLAY){ INTRO_REPLAY=false; return openWarehouse() }
+  if(S && S.name && S.onboard) goHome();
+  else if(S && S.name) openWarehouse();
+  else openPick();
+}
+$('title').onclick=()=>{ ac(); endTitle() };
+$('nameGo').onclick=()=>{
+  const n=($('fname').value||'').trim();
+  S.name = n || (S.g==='f'?'לוֹחֶמֶת':'לוֹחֵם'); ac(); save();
+  if(S.onboard) goHome(); else openWarehouse();
+};
+$('fname').addEventListener('keydown',e=>{ if(e.key==='Enter') $('nameGo').click() });
+
+addEventListener('resize',()=>{ if(G) buildGrid(); });
+
+S = load() || blank();
+if(S.name) $('fname').value=S.name;
+startGenderSweep();
+initStoryDots();
+playTitle();
+
+</script>
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));</script>
+</body></html>
