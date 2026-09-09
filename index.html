@@ -483,6 +483,48 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
 .objective b{color:var(--gold-hi);font-family:var(--f-num);direction:ltr;unicode-bidi:isolate}
 /* the slot is always in the layout, so the grid never resizes mid-turn */
 .readyslot{min-height:62px;display:flex;align-items:center;margin-top:9px}
+/* ---- what waits tomorrow ---- */
+.tomorrow{margin:14px 0 4px;padding:13px 14px;border-radius:14px;
+  background:rgba(27,79,209,.11);border:1px solid rgba(27,79,209,.34);text-align:right}
+.tomorrow h4{margin:0 0 5px;font-size:13px;letter-spacing:.06em;color:var(--blue-hi)}
+.tomorrow p{margin:0 0 9px;font-size:14px;line-height:1.55;color:var(--chalk)}
+.tmrow{display:flex;gap:7px;flex-wrap:wrap}
+.tmr{font-size:15px;font-weight:800;color:var(--gold-hi);background:rgba(245,185,59,.12);
+  border:1px solid rgba(245,185,59,.4);border-radius:9px;padding:5px 10px}
+.homedue{margin:0 0 9px;font-size:13.5px;color:var(--blue-hi);text-align:center;line-height:1.5}
+.prow .why{display:block;font-style:normal;font-size:11.5px;color:var(--faint);
+  line-height:1.45;margin-top:2px;max-width:230px}
+.dolist{display:flex;flex-direction:column;gap:8px}
+.dorow{display:flex;flex-direction:column;gap:3px;padding:11px 12px;border-radius:12px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}
+.dorow b{font-size:16px;color:var(--gold-hi)}
+.dorow .dwhy{font-size:12.5px;color:var(--faint)}
+.dorow .dact{font-size:13.5px;color:var(--chalk);line-height:1.5}
+.homedue b{color:var(--gold-hi)}
+.modebar{display:flex;gap:8px;margin-bottom:9px}
+.modebar button{flex:1;font-size:13px;padding:9px 0;border-radius:11px;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.13);color:var(--chalk-2)}
+.modebar button.on{background:rgba(245,185,59,.14);border-color:rgba(245,185,59,.5);color:var(--gold-hi);font-weight:700}
+/* ---- retrieval pane ---- */
+.recallpane{padding:6px 2px 0;display:flex;flex-direction:column;gap:11px}
+.rcTag{align-self:center;font-size:12px;letter-spacing:.08em;color:var(--gold-hi);
+  border:1px solid rgba(245,185,59,.45);border-radius:999px;padding:4px 12px;background:rgba(245,185,59,.09)}
+.rcQ{display:flex;align-items:center;justify-content:center;gap:10px;
+  font-family:var(--f-num);direction:ltr;font-size:40px;font-weight:800;color:var(--chalk)}
+.rcQ span{font-size:28px;color:var(--chalk-2)}
+.rcSlot{min-width:92px;text-align:center;border-bottom:3px solid rgba(245,185,59,.55);
+  color:var(--gold-hi);font-style:normal;padding:0 8px}
+.rcSlot.empty{color:var(--faint)}
+.rcSlot.right{color:var(--mint);border-color:var(--mint)}
+.rcSlot.wrong{color:var(--red-hi);border-color:var(--red-hi);animation:shake .34s}
+.rcHint{text-align:center;font-size:13.5px;color:var(--chalk-2);line-height:1.5;min-height:20px}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;max-width:280px;
+  margin:0 auto;width:100%;direction:ltr}
+.keypad button{font-family:var(--f-num);font-size:23px;font-weight:800;color:var(--chalk);
+  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);border-radius:12px;
+  padding:11px 0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.keypad button:active{background:rgba(245,185,59,.2);transform:scale(.96)}
+.keypad button.del{color:var(--red-hi);font-size:19px}
 .readyslot .btn{width:100%}
 .fw{overflow-y:auto;overflow-x:hidden}
 /* the outline a child traces on the middle rung */
@@ -682,6 +724,12 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
         <img id="hsCoach" alt="">
         <p id="hsSay"></p>
       </div>
+      <p class="homedue" id="hsDue" hidden></p>
+      <!-- one real choice: carry the story on, or just train -->
+      <div class="modebar" id="hsMode" hidden>
+        <button id="hsStory">קְרַב סִפּוּר</button>
+        <button id="hsTrain">אִמּוּן</button>
+      </div>
       <button class="btn primary" id="goFight">לְהִלָּחֵם</button>
     </div>
   </div>
@@ -738,6 +786,20 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
       </div>
       <div class="readyslot"><button class="btn primary" id="readyBtn" hidden>אֲנִי {מוּכָן|מוּכָנָה}</button></div>
     </div>
+
+    <!-- retrieval: no grid, no outline, nothing to count. The only place in
+         the game where the child is asked to simply KNOW the answer. -->
+    <div class="recallpane" id="recallPane" hidden>
+      <div class="rcTag">מִזִּכָּרוֹן — בְּלִי רֶשֶׁת</div>
+      <div class="rcQ"><b id="rcA">0</b><span>×</span><b id="rcB">0</b><span>=</span>
+        <i class="rcSlot num" id="rcIn">?</i></div>
+      <div class="rcHint" id="rcHint">{אִם אַתָּה יוֹדֵעַ|אִם אַתְּ יוֹדַעַת} — {תַּקְלִיד|תַּקְלִידִי}. {אִם לֹא|אִם לֹא} — יֵשׁ כַּפְתּוֹר לִבְנוֹת.</div>
+      <div class="keypad" id="rcPad"></div>
+      <div class="gridfoot">
+        <button class="btn ghost" id="rcBuild">{אֲנִי צָרִיךְ|אֲנִי צְרִיכָה} לִבְנוֹת</button>
+        <button class="btn primary" id="rcGo" disabled>זֹאת הַתְּשׁוּבָה</button>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -759,6 +821,12 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
       <h4>מָה הִשְׁתַּפֵּר עַכְשָׁו</h4>
       <div id="resLearnedRows"></div>
     </div>
+    <!-- the reason to come back is a named promise, not a streak counter -->
+    <div class="tomorrow" id="resTomorrow" hidden>
+      <h4>מָחָר</h4>
+      <p id="resTomorrowSay"></p>
+      <div class="tmrow" id="resTomorrowRows"></div>
+    </div>
     <button class="btn primary" id="resGo">הַלְאָה</button>
     <button class="txtbtn" id="resAgain">עוֹד סִבּוּב מוּלוֹ</button>
   </div>
@@ -769,22 +837,38 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
   <div class="pwrap">
     <button class="txtbtn" id="pBack">&rsaquo; חזרה</button>
     <h2>מה הוא באמת יודע</h2>
-    <p class="lead">כל ריבוע הוא תרגיל אחד. הצבע נקבע לפי כמה פעמים הוא ענה נכון
-      <b>ומהר</b>, לא לפי כמה פעמים ראה אותו.</p>
+    <p class="lead">כל ריבוע הוא תרגיל אחד. הצבע נקבע לפי <b>איזו הוכחה יש</b>,
+      לא לפי כמה פעמים ראה אותו: לראות &rarr; לבנות לבד &rarr; לשלוף בלי רשת
+      &rarr; לשלוף שוב ביום אחר. ירוק נאמר רק על השלב האחרון.</p>
     <div class="mat" id="mat"></div>
     <div class="legend">
       <span><i style="background:#161C2A"></i>לא נבדק</span>
-      <span><i style="background:#7A1024"></i>נופל</span>
-      <span><i style="background:#1B4FD1"></i>מבין</span>
-      <span><i style="background:#3DDC84"></i>בעל פה</span>
+      <span><i style="background:#7A1024"></i>טועה בשליפה</span>
+      <span><i style="background:#1B4FD1"></i>בונה לבד</span>
+      <span><i style="background:#3DDC84"></i>נשאר אחרי לילה</span>
     </div>
     <div class="plist" id="pStats"></div>
+
+    <h2 style="margin-top:20px">מה כדאי לעשות השבוע</h2>
+    <p class="lead">שלושה דברים, ולמה דווקא הם. לא רשימת חורים — רשימת פעולות.</p>
+    <div class="dolist" id="pDo"></div>
+
     <h2 style="margin-top:20px">סדר הלימוד</h2>
     <p class="lead">הלוחות נפתחים לפי סדר בנוי, לא לפי 2,3,4. תרגיל קשה לא ייפתח
       לפני שהחלקים שמרכיבים אותו יושבים.</p>
     <div class="tiers" id="pTiers"></div>
     <h2 style="margin-top:20px">מה הכי חסר</h2>
     <div class="plist" id="pWeak"></div>
+
+    <h2 style="margin-top:20px">הנתונים</h2>
+    <p class="lead">הכל נשמר רק על המכשיר הזה. מחיקת נתוני הדפדפן או מעבר
+      למכשיר אחר מוחקים את הכל — לכן יש כאן גיבוי.
+      <b id="pLogN">0</b> אירועים נרשמו עד עכשיו.</p>
+    <button class="btn ghost" id="pCsv">לייצא יומן אירועים (CSV)</button>
+    <button class="btn ghost" id="pBackup" style="margin-top:7px">לשמור גיבוי מלא (JSON)</button>
+    <button class="btn ghost" id="pRestore" style="margin-top:7px">לשחזר מגיבוי</button>
+    <input type="file" id="pFile" accept="application/json,.json" hidden>
+
     <h2 style="margin-top:20px">להתחיל מחדש</h2>
     <p class="lead">שתי אפשרויות שונות. הראשונה בטוחה, השנייה לא הפיכה.</p>
     <button class="btn ghost" id="pRestart" style="margin-top:4px">להתחיל את הסיפור מחדש</button>
@@ -811,7 +895,7 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
    is current, and if it is holding an older one it throws away its
    caches and reloads itself — once, guarded, never in a loop.
    ============================================================ */
-const BUILD_ID='2026-09-09 05:07';
+const BUILD_ID='2026-09-09 12:40';
 (async function checkBuild(){
   if(!location.protocol.startsWith('http')) return;   /* a local file has no server to ask */
   try{
@@ -1186,12 +1270,73 @@ function splitFor(a,b){
   return {parts:bd.from, other, hard, say:bd.say};
 }
 
+/* ============================================================
+   WHAT "KNOWING 3 x 4" ACTUALLY MEANS
+   One number cannot say it, so four separate kinds of evidence are
+   kept, and each is only written by the thing that actually proves it:
+
+     concept   — watched it built, then built it right on the outline
+     build     — built exactly 3 rows of 4, alone, no outline, no help
+     recall    — answered 12 with no grid on the screen at all
+     retention — recalled it again on a LATER DAY
+
+   The level 0..5 below is derived from these, never written directly,
+   so the game can never claim more than the evidence supports.
+   ============================================================ */
+function kOf(f){ if(!f.k) f.k={c:0,b:0,r:0,t:0}; return f.k }
+/* the level the evidence justifies — each step names its own proof */
+function rawLevel(f){
+  const k=kOf(f);
+  if(k.t>=1) return 5;    /* retrieved again on a LATER day            */
+  if(k.r>=1) return 4;    /* retrieved with no grid on the screen      */
+  if(k.b>=1) return 3;    /* built exactly a x b alone, unaided        */
+  if(k.c>=1) return 2;    /* built it right, on the outline or helped  */
+  if(f.demo)  return 1;   /* has watched it built                      */
+  return 0;
+}
+/* THE SPACING RULE lives here, on the evidence, not on the level.
+   Each layer may be written at most ONCE per calendar day, so twenty
+   repetitions in one afternoon count for exactly what two do. Retention
+   is stricter still: it needs retrievals on two different days, which no
+   amount of practice on a Tuesday can manufacture. A level only ever
+   falls back immediately — a fact that stopped working says so at once. */
+function kBump(f, layer){
+  if(!f.kd) f.kd={};
+  const d=today();
+  if(f.kd[layer]===d) return false;      /* already counted today */
+  f.kd[layer]=d; kOf(f)[layer]++;
+  return true;
+}
+function relevel(f){
+  const want=rawLevel(f);
+  f.l=want;
+  if(want>0) f.up=today();
+}
 /* mastery level of one fact, borrowing a little from its mirror */
 function lvl(a,b){
   const x=S.facts[fk(a,b)], y=S.facts[fk(b,a)];
   if(!x) return 0;
   const borrowed=Math.min(3, Math.round((y?y.l:0)*0.6));
   return Math.max(x.l, Math.min(x.l+1, borrowed));
+}
+/* how many facts hold each kind of evidence — the parent view says these
+   words out loud, so they must mean exactly what they measure */
+function countLayer(which){
+  let n=0;
+  for(let a=1;a<=10;a++) for(let b=1;b<=10;b++){
+    const f=S.facts[fk(a,b)]; if(!f) continue;
+    const k=kOf(f);
+    if(which==='concept' && (k.c>=1||f.demo)) n++;
+    else if(which==='build' && k.b>=1) n++;
+    else if(which==='recall' && k.r>=1) n++;
+    else if(which==='retention' && k.t>=1) n++;
+  }
+  return n;
+}
+/* a fact is worth asking WITHOUT the grid once it can be built alone */
+function recallReady(a,b){
+  const f=S.facts[fk(a,b)]; if(!f) return false;
+  return kOf(f).b>=1;
 }
 /* a tier is open once the tier before it is mostly solid */
 /* only the facts this tier actually INTRODUCES count towards opening the
@@ -1242,7 +1387,29 @@ function bumpRung(a,b){ const f=S.facts[fk(a,b)]; if(f&&f.rung<2){f.rung++;save(
    introducing and never consolidates — the child meets everything once
    and remembers nothing. */
 let NEWBUDGET=2;
-function resetBudget(n){ NEWBUDGET = (n===undefined?2:n) }
+/* how much due work this fight has already served — the gate that lets new
+   material back in once revision has had the opening rounds */
+let DUESERVED=0;
+function resetBudget(n){ NEWBUDGET = (n===undefined?2:n); DUESERVED=0 }
+/* read the last fight off the log rather than keeping a second counter */
+function newBudgetFor(){
+  const log=(S.log||[]).slice(-40);
+  let good=0, weak=0;
+  log.forEach(e=>{
+    if(e.k==='exact'||e.k==='recallHit') good++;
+    else if(e.k==='assisted'||e.k==='recallMiss'||e.k==='equivalent') weak++;
+  });
+  if(!good && !weak) return 2;
+  if(weak>=good) return 1;
+  return good>=weak*3 ? 3 : 2;
+}
+/* WHAT COMES NEXT — due first, then new.
+   The order matters more than it looks. Serving new material whenever the
+   budget allowed meant a short fight was almost entirely new facts: the
+   child met a hundred exercises once each and consolidated none of them,
+   while the due dates the game had carefully computed were never reached.
+   Anything whose interval has actually elapsed now outranks anything new,
+   which is what having a scheduler is for. */
 function pick(last){
   const p=pool().filter(([a,b])=>!(last&&last[0]===a&&last[1]===b));
   if(!p.length) return [2,2];
@@ -1254,9 +1421,16 @@ function pick(last){
     NEWBUDGET--; return fresh[0];
   };
   if(!old.length) return takeFresh();
-  if(fresh.length && NEWBUDGET>0) return takeFresh();
   const due=old.filter(([a,b])=>isDue(a,b));
+  /* Due work opens the fight; new material follows it. Making due work an
+     absolute priority instead starves the curriculum outright — something is
+     always due, so nothing new is ever introduced and the tiers stop opening.
+     So: serve what is due first, and once this fight has done that, new
+     material is allowed to flow again. */
+  if(fresh.length && NEWBUDGET>0 && (!due.length || DUESERVED>0)) return takeFresh();
   const from=due.length?due:old;
+  if(due.length) DUESERVED++;
+  /* weakest first, but not always the same weakest one */
   from.sort((x,y)=>lvl(x[0],x[1])-lvl(y[0],y[1]));
   const head=from.slice(0,Math.max(3,Math.ceil(from.length*0.3)));
   return head[Math.floor(Math.random()*head.length)];
@@ -1264,56 +1438,179 @@ function pick(last){
 
 /* ---------- state ---------- */
 let S=null;
+function blankFact(){
+  return {l:0,s:0,c:0,w:0,t:0,ms:[],d:[],due:0,demo:0,rung:0,
+          k:{c:0,b:0,r:0,t:0},   /* concept · build · recall · retention */
+          rd:[],                  /* days a recall landed — retention needs 2 */
+          rms:[],                 /* recall latencies, the only honest speed  */
+          rs:0, rw:0,             /* recall right / wrong — the ONLY accuracy */
+          eq:0,                   /* right area, wrong shape                  */
+          kd:{},                  /* the day each layer was last credited     */
+          up:''};                 /* the day the level last climbed           */
+}
 function blank(){
   const facts={};
-  for(let a=1;a<=10;a++) for(let b=1;b<=10;b++)
-    facts[fk(a,b)]={l:0,s:0,c:0,w:0,t:0,ms:[],d:[],due:0,demo:0,rung:0};
-  return {v:2,name:'',g:'m',onboard:0,pace:'slow',voice:'',facts,beat:{},xp:0,score:0,best:0,sound:true,tts:true,
-          totC:0,totW:0,seconds:0,sessions:0,clues:0,started:Date.now()};
+  for(let a=1;a<=10;a++) for(let b=1;b<=10;b++) facts[fk(a,b)]=blankFact();
+  return {v:3,name:'',g:'m',onboard:0,pace:'slow',voice:'',facts,beat:{},score:0,best:0,sound:true,tts:true,
+          totC:0,totW:0,sessions:0,clues:0,log:[],days:[],started:Date.now()};
+}
+/* v2 saves knew only l:0..5. It cannot say WHICH evidence produced that
+   level, so the migration claims only what l could honestly have meant:
+   everything up to l=3 came from building, and l>=4 came from speed on the
+   grid — which is not retrieval, so it is demoted to build, not to recall.
+   Nobody loses a tier; nobody keeps a "knows it by heart" we never tested. */
+function migrateFact(f){
+  if(!f.ms)f.ms=[]; if(!f.d)f.d=[]; if(f.due===undefined)f.due=0;
+  if(f.demo===undefined)f.demo=0; if(f.rung===undefined)f.rung=f.demo?2:0;
+  if(!f.rd)f.rd=[]; if(!f.rms)f.rms=[];
+  if(f.rs===undefined)f.rs=0; if(f.rw===undefined)f.rw=0;
+  if(f.eq===undefined)f.eq=0; if(f.up===undefined)f.up=''; if(!f.kd)f.kd={};
+  if(!f.k){
+    const L=f.l||0;
+    f.k={ c: L>=2?1:0,
+          b: L>=3?1:0,
+          r: 0, t: 0 };
+    if(L>=1) f.demo=1;
+    f.l=rawLevel(f);            /* honest re-read of the same history */
+  }
+  return f;
 }
 function load(){
   try{const r=localStorage.getItem(KEY); if(r){const p=JSON.parse(r);
-    if(p&&p.v===2){ for(const k in p.facts){const f=p.facts[k];
-      if(!f.ms)f.ms=[]; if(!f.d)f.d=[]; if(f.due===undefined)f.due=0;
-      if(f.demo===undefined)f.demo=0; if(f.rung===undefined)f.rung=f.demo?2:0}
+    if(p&&(p.v===2||p.v===3)){
+      for(let a=1;a<=10;a++) for(let b=1;b<=10;b++){
+        const key=fk(a,b);
+        if(!p.facts[key]) p.facts[key]=blankFact(); else migrateFact(p.facts[key]);
+      }
       if(!p.g)p.g='m'; if(!p.pace)p.pace='slow'; if(p.voice===undefined)p.voice=''; if(p.onboard===undefined)p.onboard=p.sessions>0?1:0;
+      if(!p.log)p.log=[]; if(!p.days)p.days=[]; if(p.clues===undefined)p.clues=0;
+      p.v=3;
       return p }}}catch(e){}
   return null;
 }
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
 const today=()=>new Date().toISOString().slice(0,10);
-function medianMs(f){ if(!f.ms||!f.ms.length) return 0;
-  const s=[...f.ms].sort((x,y)=>x-y); return s[Math.floor(s.length/2)] }
 
-/* how the answer was produced decides how high it can climb */
-const HOW={ demo:0, split:3, whole:5, helped:1 };
-function record(a,b,ok,ms,how){
+/* ============================================================
+   THE EVENT LOG
+   A score at the end of a fight cannot tell you whether the game
+   works. The sequence can: what was asked, how it was answered, how
+   much help was taken, which rectangle was actually drawn, how long
+   it took, and whether it came back on a later day. It stays on the
+   device, and it leaves as a CSV the parent can open.
+   ============================================================ */
+const LOG_MAX=3000;
+function logEvent(kind, d){
+  if(!S) return;
+  if(!S.log) S.log=[];
+  const e={ts:Date.now(), k:kind};
+  if(d) for(const key in d) if(d[key]!==undefined) e[key]=d[key];
+  if(F && F.foe) e.foe=F.foe.key;
+  S.log.push(e);
+  if(S.log.length>LOG_MAX) S.log.splice(0, S.log.length-LOG_MAX);
+}
+/* days the child actually played — the only honest basis for "came back" */
+function markDay(){
+  if(!S.days) S.days=[];
+  const d=today();
+  if(!S.days.includes(d)){ S.days.push(d); if(S.days.length>400) S.days.shift() }
+}
+const LOG_COLS=['ts','date','k','a','b','ms','pieces','rung','helped','foe','answer'];
+function logCSV(){
+  const rows=[LOG_COLS.join(',')];
+  (S.log||[]).forEach(e=>{
+    const date=new Date(e.ts).toISOString();
+    rows.push(LOG_COLS.map(c=>{
+      const v = c==='date' ? date : e[c];
+      if(v===undefined||v===null) return '';
+      const t=String(v);
+      return /[",\n]/.test(t) ? '"'+t.replace(/"/g,'""')+'"' : t;
+    }).join(','));
+  });
+  return rows.join('\n');
+}
+function download(name, text, mime){
+  try{
+    const b=new Blob([text],{type:(mime||'text/plain')+';charset=utf-8'});
+    const u=URL.createObjectURL(b);
+    const a=document.createElement('a');
+    a.href=u; a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ a.remove(); URL.revokeObjectURL(u) },1500);
+    return true;
+  }catch(e){ return false }
+}
+function medianMs(f){ return medianOf(f&&f.ms) }
+/* speed on a retrieval is the only speed that means "knows it", so it is
+   kept apart from how long a rectangle took to draw */
+function recallMs(f){ return medianOf(f&&f.rms) }
+
+/* ============================================================
+   RECORDING WHAT HAPPENED — one outcome, one kind of evidence
+   Every turn ends in exactly one of these, and each writes only the
+   layer it actually proves. This is the whole point: the product may
+   not say "knows it by heart" on the strength of a rectangle.
+   ============================================================ */
+const OUTCOME={
+  exact:      'built exactly a x b, alone',
+  traced:     'built it right, but on the outline',
+  assisted:   'built it right after being told how',
+  equivalent: 'right area, different rectangle — proves the area, not the fact',
+  recallHit:  'answered with no grid',
+  recallMiss: 'answered with no grid, and was wrong',
+  motor:      'stepped on a locked piece / overshot — not a maths event'
+};
+function record(a,b,outcome,ms){
   const f=S.facts[fk(a,b)]; if(!f) return;
-  f.s++; f.t=Date.now();
-  const cap=HOW[how]!==undefined?HOW[how]:3;
-  if(ok){
-    f.c++; S.totC++;
-    if(how==='whole'){ f.ms.push(ms); if(f.ms.length>7) f.ms.shift() }
-    const med=medianMs(f)||ms, fast=med<3500;
-    if(f.l<cap){
-      if(how==='whole' && f.l>=3){
-        if(fast){ const d=today(); if(!f.d.includes(d)){f.d.push(d); if(f.d.length>4)f.d.shift()}
-          f.l = (f.l>=4 && f.d.length>=2) ? 5 : Math.min(4,f.l+1) }
-      } else f.l=Math.min(cap,f.l+1);
-    }
-    f.due = Date.now() + [0,.02,1,3,7,14][Math.min(5,f.l)]*864e5;
-  }else{
-    f.w++; S.totW++;
-    f.l = f.l>=4 ? 3 : Math.max(0,f.l-1);
-    f.due = Date.now() + 45e3;
+  const k=kOf(f), d=today();
+  f.t=Date.now();
+  /* attempts counts only things that were actually a demand */
+  if(outcome!=='motor') f.s++;
+
+  if(outcome==='exact'){
+    f.c++;
+    kBump(f,'b'); if(k.c<1) kBump(f,'c');
+    f.ms.push(ms); if(f.ms.length>7) f.ms.shift();
   }
+  else if(outcome==='traced' || outcome==='assisted'){
+    /* help and outlines can prove that the shape is understood. They can
+       never prove it was built alone, so they never touch the build layer. */
+    f.c++; kBump(f,'c');
+  }
+  else if(outcome==='equivalent'){
+    /* NOT a failure and NOT evidence. It is only ever counted as itself. */
+    f.eq++;
+  }
+  else if(outcome==='recallHit'){
+    f.c++; f.rs++; kBump(f,'r');
+    f.rms.push(ms); if(f.rms.length>7) f.rms.shift();
+    if(!f.rd.includes(d)){ f.rd.push(d); if(f.rd.length>5) f.rd.shift() }
+    /* retention is the one claim that CANNOT be earned in a single sitting */
+    if(f.rd.length>=2) k.t=1;
+  }
+  else if(outcome==='recallMiss'){
+    /* the only error the model is allowed to call an error */
+    f.w++; f.rw++; S.totW++;
+    k.r=0; k.t=0;                       /* it was not retrievable after all */
+    f.due=Date.now()+45e3;
+    relevel(f); logEvent('recallMiss',{a,b,ms}); save(); return;
+  }
+  if(outcome!=='motor' && outcome!=='equivalent') S.totC++;
+
+  relevel(f);
+  /* the schedule the game actually promises the parent it keeps */
+  f.due = Date.now() + [0,.02,1,3,7,14][Math.min(5,f.l)]*864e5;
+  logEvent(outcome,{a,b,ms});
   save();
 }
 function markDemo(a,b){ const f=S.facts[fk(a,b)]; if(f&&!f.demo){ f.demo=1;
   if(f.rung<1) f.rung=1;   /* watched it built -> next it is traced, not free-hand */
-  if(f.l<1) f.l=1; save()} }
-function memorised(){ let n=0; for(let a=1;a<=10;a++)for(let b=1;b<=10;b++) if(lvl(a,b)>=5)n++; return n }
-function understood(){ let n=0; for(let a=1;a<=10;a++)for(let b=1;b<=10;b++) if(lvl(a,b)>=3)n++; return n }
+  relevel(f); logEvent('demo',{a,b}); save()} }
+function medianOf(arr){ if(!arr||!arr.length) return 0;
+  const s=[...arr].sort((x,y)=>x-y); return s[Math.floor(s.length/2)] }
+/* "by heart" is retention and nothing else — a recall that survived a night */
+function memorised(){ return countLayer('retention') }
+/* "builds it alone" is the build layer */
+function understood(){ return countLayer('build') }
 
 /* ---------- particles ---------- */
 const PFX={p:[],x:null,w:0,h:0,raf:0};
@@ -1493,29 +1790,58 @@ $('stSkip').onclick=()=>{ nstop(); S.onboard=1; save(); goHome() };
    you are ready for.
    ============================================================ */
 function meArt(){ return (S.g==='f' && ART.heroine) ? ART.heroine : ART.hero }
+/* Each foe stands on the tier whose number it embodies, and its power is
+   the decomposition the child is about to be taught — the world and the
+   maths say the same sentence. The clue is a property of the STORY, not of
+   the fighter: clue i is the i-th piece of the belt, whoever was holding it. */
 const FOES=[
-  {t:0, key:'i2',  name:'הַתְּאוֹמִים',        power:'עוֹשִׂים כָּל דָּבָר פַּעֲמַיִם',
-   clue:'הַתְּאוֹמִים אָמְרוּ שֶׁמִּישֶׁהוּ שִׁלֵּם לָהֶם. הֵם לֹא יוֹדְעִים מִי.'},
-  {t:1, key:'i10', name:'מְכוֹנַת הָעֶשֶׂר',   power:'סוֹפֶרֶת רַק בַּעֲשָׂרוֹת',
-   clue:'בַּמַּחְסָן נִמְצְאָה כַּרְטִיס כְּנִיסָה שֶׁל מִישֶׁהוּ מֵהָאִרְגּוּן.'},
-  {t:2, key:'i3',  name:'שְׁלוֹשֶׁת הָאֶגְרוֹפִים', power:'מַכָּה שְׁלִישִׁית שֶׁלֹּא רוֹאִים',
-   clue:'הוּא רָאָה אֶת מִי שֶׁשָּׁבַר אֶת הַחֲגוֹרָה. לָבַשׁ מְעִיל אָרֹךְ.'},
-  {t:3, key:'i5',  name:'יַד הַפְּלָדָה',      power:'סוֹפֵר בַּחֲמִישִׁיּוֹת',
-   clue:'הַכַּסֶּפֶת נִפְתְּחָה מִבִּפְנִים. מִישֶׁהוּ כְּבָר הָיָה שָׁם.'},
-  {t:4, key:'i4',  name:'אַרְבַּע זְרוֹעוֹת',   power:'מַכְפִּיל, וְאָז מַכְפִּיל שׁוּב',
-   clue:'הוּא הִתְאַמֵּן פַּעַם עִם הָאַלּוּף הַיָּשָׁן. הֵם רָבוּ.'},
-  {t:5, key:'i8',  name:'שְׁמוֹנֶה הַצְּלָלִים', power:'מִתְפַּצֵּל לִשְׁמוֹנָה',
-   clue:'הַצְּלָלִים לוֹחֲשִׁים שֵׁם. {אַתָּה כִּמְעַט שׁוֹמֵעַ|אַתְּ כִּמְעַט שׁוֹמַעַת} אוֹתוֹ.'},
-  {t:6, key:'i6',  name:'שֵׁשׁ הַשְּׁרִירִים',  power:'חָמֵשׁ מַכּוֹת וְעוֹד אַחַת',
-   clue:'הַחֲגוֹרָה לֹא נִשְׁבְּרָה בִּתְאוּנָה. מִישֶׁהוּ תִּכְנֵן אֶת זֶה.'},
-  {t:7, key:'i9',  name:'תִּשְׁעַת הַזְּנָבוֹת', power:'תָּמִיד אֶחָד פָּחוֹת מֵעֶשֶׂר',
-   clue:'מִי שֶׁתִּכְנֵן רָצָה שֶׁעֶשֶׂר לוֹחֲמִים יִשְׁמְרוּ עַל הַחֲתִיכוֹת.'},
-  {t:8, key:'i7',  name:'שֶׁבַע הַמַּסֵּכוֹת',  power:'מַחְלִיף פָּנִים בְּכָל מַכָּה',
-   clue:'הָאַלּוּף הַיָּשָׁן מֵעוֹלָם לֹא עָזַב אֶת הַבִּנְיָן.'},
-  {t:9, key:'champ',name:'הָאַלּוּף',          power:'הוּא יוֹדֵעַ הַכֹּל',
-   clue:'הוּא שָׁבַר אוֹתָהּ בְּעַצְמוֹ — כְּדֵי לִמְצֹא מִישֶׁהוּ שֶׁיִּלְמַד אוֹתָהּ מֵהַתְחָלָה.'}
+  {t:0, key:'i2',  name:'הַתְּאוֹמִים',        power:'עוֹשִׂים כָּל דָּבָר פַּעֲמַיִם'},
+  {t:1, key:'i10', name:'מְכוֹנַת הָעֶשֶׂר',   power:'סוֹפֶרֶת רַק בַּעֲשָׂרוֹת'},
+  {t:2, key:'i5',  name:'יַד הַפְּלָדָה',      power:'סוֹפֵר בַּחֲמִישִׁיּוֹת'},
+  {t:3, key:'i4',  name:'אַרְבַּע זְרוֹעוֹת',   power:'מַכְפִּיל בִּשְׁנַיִם, וְאָז שׁוּב בִּשְׁנַיִם'},
+  {t:4, key:'i8',  name:'שְׁמוֹנֶה הַצְּלָלִים', power:'מִתְפַּצֵּל לְאַרְבַּע, וְעוֹד אַרְבַּע'},
+  {t:5, key:'i3',  name:'שְׁלוֹשֶׁת הָאֶגְרוֹפִים', power:'פַּעֲמַיִם, וְעוֹד מַכָּה אַחַת'},
+  {t:6, key:'i6',  name:'שֵׁשׁ הַשְּׁרִירִים',  power:'חָמֵשׁ מַכּוֹת, וְעוֹד אַחַת'},
+  {t:7, key:'i9',  name:'תִּשְׁעַת הַזְּנָבוֹת', power:'חָמֵשׁ מַכּוֹת, וְעוֹד אַרְבַּע'},
+  {t:8, key:'i7',  name:'שֶׁבַע הַמַּסֵּכוֹת',  power:'חָמֵשׁ מַכּוֹת וְעוֹד שְׁתַּיִם — וּבְכָל אַחַת פָּנִים אֲחֵרוֹת'},
+  {t:9, key:'champ',name:'הָאַלּוּף',          power:'הוּא יוֹדֵעַ הַכֹּל'}
 ];
-function nextFoe(){ return FOES[Math.min(FOES.length-1, openTier())] }
+/* the ten pieces of the belt, in the order the story gives them up */
+const CLUES=[
+  'הַתְּאוֹמִים אָמְרוּ שֶׁמִּישֶׁהוּ שִׁלֵּם לָהֶם. הֵם לֹא יוֹדְעִים מִי.',
+  'בַּמַּחְסָן נִמְצָא כַּרְטִיס כְּנִיסָה שֶׁל מִישֶׁהוּ מֵהָאִרְגּוּן.',
+  'הַכַּסֶּפֶת נִפְתְּחָה מִבִּפְנִים. מִישֶׁהוּ כְּבָר הָיָה שָׁם.',
+  'הוּא הִתְאַמֵּן פַּעַם עִם הָאַלּוּף הַיָּשָׁן. הֵם רָבוּ.',
+  'הַצְּלָלִים לוֹחֲשִׁים שֵׁם. {אַתָּה כִּמְעַט שׁוֹמֵעַ|אַתְּ כִּמְעַט שׁוֹמַעַת} אוֹתוֹ.',
+  'הוּא רָאָה אֶת מִי שֶׁשָּׁבַר אֶת הַחֲגוֹרָה. לָבַשׁ מְעִיל אָרֹךְ.',
+  'הַחֲגוֹרָה לֹא נִשְׁבְּרָה בִּתְאוּנָה. מִישֶׁהוּ תִּכְנֵן אֶת זֶה.',
+  'מִי שֶׁתִּכְנֵן רָצָה שֶׁעֶשֶׂר לוֹחֲמִים יִשְׁמְרוּ עַל הַחֲתִיכוֹת.',
+  'הָאַלּוּף הַיָּשָׁן מֵעוֹלָם לֹא עָזַב אֶת הַבִּנְיָן.',
+  'הוּא שָׁבַר אוֹתָהּ בְּעַצְמוֹ — כְּדֵי לִמְצֹא מִישֶׁהוּ שֶׁיִּלְמַד אוֹתָהּ מֵהַתְחָלָה.'
+];
+
+/* ---- story progress is NOT curriculum progress ----
+   The belt is a story: piece i is won by beating foe i, once. The maths is a
+   ladder: tier t opens when tier t-1 is solid. They advance at different
+   speeds, so they are tracked separately. A foe may only be fought FOR A
+   PIECE once the maths he embodies is actually open — until then the same
+   fighter is available as training, and training pays no piece. */
+function storyIdx(){ return Math.min(FOES.length-1, S.clues||0) }
+function storyFoe(){ return FOES[storyIdx()] }
+/* the champion is the finale: he asks for the whole board, so he waits until
+   every tier — the last one included — is solid */
+function foeReady(foe){
+  if(foe.t>=TIERS.length) return TIERS.every((t,i)=>tierSolid(i)>=0.7);
+  return openTier()>=foe.t;
+}
+/* is the next belt piece actually winnable right now? */
+function storyOpen(){ return (S.clues||0)<FOES.length && foeReady(storyFoe()) }
+/* when the story is ahead of the maths, train against the fighter whose
+   numbers the child is working on — the one the exercises actually come from */
+function trainFoe(){ return FOES[Math.min(FOES.length-1, openTier())] }
+function nextFoe(){ return storyOpen() ? storyFoe() : trainFoe() }
+/* the floor the child is standing on is the story's floor, 1..10 */
+function floorNo(){ return storyIdx()+1 }
 
 /* ============================================================
    FIGHT — the enemy throws a number. You build a shield whose
@@ -1526,17 +1852,28 @@ function nextFoe(){ return FOES[Math.min(FOES.length-1, openTier())] }
 let COLS=10, ROWS=10;
 let F=null, G=null;
 
-function startFight(foe, again){
+function startFight(foe, mode){
   ac();
-  F={foe, hpMe:100, hpFoe:100, i:0, total:8, combo:0, best:0, blocks:0,
-     score:0, misses:0, learned:[], last:null, over:false, again:!!again};
+  markDay();
+  /* a fight is either FOR a piece of the belt or it is training. The result
+     screen may only promise a piece when this is the story fight the child
+     has not already won — otherwise the world says one thing and S.clues
+     does another, and the child learns the world is lying. */
+  const story = mode!=='training' && storyOpen() && foe===storyFoe();
+  F={foe, story, hpMe:100, hpFoe:100, i:0, total:8, combo:0, best:0, blocks:0,
+     score:0, misses:0, learned:[], last:null, over:false,
+     recalls:0, recallHits:0, exact:0, equiv:0, helps:0, mode:(story?'story':'training')};
+  logEvent('fightStart',{foe:foe.key, mode:F.mode});
   show('fight');
   $('hudMe').textContent=S.name; $('hudFoe').textContent=foe.name;
   $('figMe').src=meArt(); $('figFoe').src=ART[foe.key]||ART.champ;
   $('hpMe').style.width='100%'; $('hpFoe').style.width='100%';
   $('ghMe').style.width='100%'; $('ghFoe').style.width='100%';
   $('scoreN').textContent='0';
-  resetBudget(2);
+  /* how much new material this fight can carry depends on how the last one
+     went, not on a constant. A child who is building alone can take three
+     new facts; a child who is leaning on help should meet one. */
+  resetBudget(newBudgetFor());
   sizeGrid(2,2); buildGrid();
   setTimeout(()=>fxInit('fx'),40);
   setTimeout(turn,500);
@@ -1594,7 +1931,11 @@ function buildGrid(){
     g.appendChild(d);
   }
   wrap.style.width=(cell*COLS+(COLS-1)*CGAP+12)+'px';
-  G={cell, el:g};
+  /* Every rebuild gets a new generation. The counting animation runs on
+     setTimeout, so a rebuild between two of its steps used to leave it
+     indexing a board that no longer exists — cellAt() returned undefined
+     and the demo died mid-count, which reads to a child as a freeze. */
+  G={cell, el:g, gen:(G&&G.gen||0)+1};
   fitGrid();
 }
 /* Predicting the available height is fragile — measure the real overflow and
@@ -1627,20 +1968,89 @@ function fitGrid(){
 }
 const cellAt=(r,c)=>G.el.children[r*COLS+c];
 
-/* ---------- one turn ---------- */
+/* ---------- one turn ----------
+   A fight is an arc, not eight identical rounds:
+     first round   — something already solid, so it starts with a win
+     middle rounds — what is due, then what is new, then free building
+     last round    — a retrieval, with no grid at all, if anything is ready
+   The last round is the one that can actually prove something new. */
 function turn(){
   if(!F || F.over) return;
   if(F.i>=F.total || F.hpFoe<=0 || F.hpMe<=0) return endFight();
-  const [a,b]=pick(F.last);
+  if(!F.seen) F.seen={};
+  /* a reserved round asks for the fact cold; otherwise the child builds */
+  const cold=recallPick();
+  const [a,b]= cold || pickForTurn();
+  if(cold) F.seen[fk(a,b)]=1;
   F.cur=[a,b]; F.need=a*b; F.have=0; F.pieces=[]; F.helped=false;
-  F.t0=0; F.how='whole'; F.rung=rungOf(a,b);
+  F.t0=0; F.rung=rungOf(a,b);
+  $('incoming').hidden=true;
+  /* retrieval turn: the grid never appears, so a right answer here is the
+     only thing in the game that proves the fact was actually remembered */
+  if(cold) return askRecall(a,b);
   sizeGrid(a,b); buildGrid();
   $('needN').textContent=F.need;
   $('haveN').textContent='0';
   $('pieces').innerHTML='';
-  $('incoming').hidden=true;
   if(!shown(a,b)) return demoFirst(a,b);
   askTurn(a,b);
+}
+/* the warm-up is deliberate: the strongest fact the child owns, first */
+function pickForTurn(){
+  if(!F.seen) F.seen={};
+  const take=([a,b])=>{ F.seen[fk(a,b)]=1; return [a,b] };
+  if(F.i===0){
+    /* the warm-up is a win, not a ritual: any solid fact will do, and
+       rotating them keeps the first round from being 2x2 every single time */
+    const p=pool().filter(([a,b])=>lvl(a,b)>=2);
+    if(p.length){
+      p.sort((x,y)=>lvl(y[0],y[1])-lvl(x[0],x[1]));
+      const head=p.slice(0, Math.max(1, Math.min(6, Math.ceil(p.length*0.3))));
+      return take(head[Math.floor(Math.random()*head.length)]);
+    }
+  }
+  /* Repetition inside one fight is what inflated mastery: the same fact eight
+     times reads as eight pieces of evidence. Ask something else while
+     something else is available. */
+  for(let tries=0; tries<8; tries++){
+    const c=pick(F.last);
+    if(!F.seen[fk(c[0],c[1])]) return take(c);
+  }
+  return take(pick(F.last));
+}
+/* ---- retrieval is a SLOT in the fight, not an accident of due dates ----
+   Hanging it off the schedule meant it almost never happened: the foe was
+   usually down before the last round, and a fact freshly built is not due
+   for days. So the arc reserves rounds for it, and the round goes looking
+   for something worth asking cold. Two per fight — enough to measure,
+   few enough that the game is still about building. */
+const RECALL_SLOTS=[2,5,7];
+function recallQuota(){ return 2 }
+function recallCandidates(){
+  const out=[];
+  for(let a=1;a<=10;a++) for(let b=1;b<=10;b++){
+    if(!gated(a,b) || !recallReady(a,b)) continue;
+    if(F.seen && F.seen[fk(a,b)]) continue;
+    const f=S.facts[fk(a,b)], k=kOf(f);
+    /* ask first for what the claim actually hangs on: a fact retrieved once
+       and waiting on a second day, then one never asked cold at all */
+    const sc = (k.r>=1 && !k.t) ? 300 : (k.r===0 ? 200 : 100)
+             + ((!f.due||Date.now()>=f.due) ? 50 : 0);
+    out.push({a,b,sc});
+  }
+  out.sort((x,y)=>y.sc-x.sc);
+  return out;
+}
+/* returns the fact to ask cold, or null */
+function recallPick(){
+  if(F.recalls>=recallQuota()) return null;
+  if(RECALL_SLOTS.indexOf(F.i)<0) return null;
+  const c=recallCandidates();
+  if(!c.length) return null;
+  /* a little spread, so it is not always the same fact in the same slot */
+  const head=c.slice(0, Math.max(1, Math.min(4, Math.ceil(c.length*0.4))));
+  const p=head[Math.floor(Math.random()*head.length)];
+  return [p.a,p.b];
 }
 function clearGrid(){
   [...G.el.children].forEach(c=>{c.className='cell'});
@@ -1682,9 +2092,13 @@ function countBuild(a,b,mode){
   const per = byRow ? P.row : (total<=12 ? P.cell : Math.round(P.cell*0.72));
   let n=0;
   $('readout').hidden=false; $('readout').classList.remove('words');
-  const put=(r,c)=>{ const el=cellAt(r,c); el.classList.add('locked','tick');
+  const gen=G&&G.gen;
+  const stale=()=>!F||F.over||!G||G.gen!==gen;
+  const put=(r,c)=>{ const el=cellAt(r,c); if(!el) return;
+    el.classList.add('locked','tick');
     el.classList.add(cut && c>=cut ? 'pB' : 'pA') };
   const finish=()=>{
+    if(stale()) return;
     $('readout').innerHTML = cut
       ? `${cut}×${rows} + ${cols-cut}×${rows} = <b style="color:var(--mint)">${a*b}</b>`
       : `${cols} × ${rows} = <b style="color:var(--mint)">${a*b}</b>`;
@@ -1706,7 +2120,7 @@ function countBuild(a,b,mode){
     };
   };
   const step=()=>{
-    if(!F||F.over) return;
+    if(stale()) return;
     if(n>=(byRow?rows:total)) return finish();
     if(byRow){
       for(let c=0;c<cols;c++) put(n,c);
@@ -1724,6 +2138,7 @@ function countBuild(a,b,mode){
 /* ---------- the ask ---------- */
 function askTurn(a,b){
   $('demo').hidden=true;
+  $('recallPane').hidden=true; $('gridPane').hidden=false;
   $('gridPane').style.opacity='1';
   const inc=$('incoming'); inc.hidden=false;
   $('incN').textContent=F.need;
@@ -1746,6 +2161,99 @@ function askTurn(a,b){
   };
   speak(objectiveSay(a,b,rung));
 }
+/* ============================================================
+   THE RETRIEVAL TURN
+   No grid, no outline, no counting — "6 x 4 = ?" and nothing else.
+   This is the only place the game is entitled to the words
+   "knows it by heart", and the only place a wrong answer is a
+   maths error rather than a slipped finger.
+   ============================================================ */
+function askRecall(a,b){
+  F.recall=true; F.recallVal='';
+  $('gridPane').hidden=true;
+  $('demo').hidden=true;
+  $('recallPane').hidden=false;
+  $('fight').classList.remove('demoing');
+  $('rcA').textContent=a; $('rcB').textContent=b;
+  const slot=$('rcIn');
+  slot.className='rcSlot num empty'; slot.textContent='?';
+  $('rcHint').innerHTML='{אִם אַתָּה יוֹדֵעַ — תַּקְלִיד|אִם אַתְּ יוֹדַעַת — תַּקְלִידִי}. {אִם לֹא — תִּלְחַץ "לִבְנוֹת"|אִם לֹא — תִּלְחֲצִי "לִבְנוֹת"}.';
+  /* The incoming banner normally shouts the size of the blow — which on a
+     retrieval turn is the answer itself. Showing it here would hand the
+     child the thing we are asking them to remember, so the blow arrives
+     unnamed: the question on the pane IS the threat. */
+  const inc=$('incoming'); inc.hidden=false;
+  $('incN').textContent='?'; $('incLab').textContent='מַכָּה שֶׁל';
+  beep(180,.28,'sawtooth',.05,120); buzz(20);
+  buildPad();
+  $('rcGo').disabled=true;
+  charge(true);
+  F.t0=performance.now();
+  $('rcBuild').onclick=()=>{
+    /* asking to build is NOT a wrong answer — it is a child telling the
+       truth about what they know. It costs the retrieval, nothing else. */
+    logEvent('recallDeclined',{a,b});
+    hideRecall(); F.recall=false; F.declined=true;
+    sizeGrid(a,b); buildGrid();
+    $('needN').textContent=F.need; $('haveN').textContent='0'; $('pieces').innerHTML='';
+    askTurn(a,b);
+  };
+  $('rcGo').onclick=()=>submitRecall(a,b);
+  speak(`${a} כפול ${b}. בלי רשת — מה התשובה?`);
+}
+function buildPad(){
+  const pad=$('rcPad'); pad.innerHTML='';
+  const keys=['1','2','3','4','5','6','7','8','9','0','⌫'];
+  keys.forEach(kk=>{
+    const btn=document.createElement('button');
+    btn.textContent=kk;
+    if(kk==='⌫') btn.classList.add('del');
+    btn.onclick=()=>padKey(kk);
+    pad.appendChild(btn);
+  });
+}
+function padKey(k){
+  if(!F||!F.recall) return;
+  if(k==='⌫') F.recallVal=F.recallVal.slice(0,-1);
+  else if(F.recallVal.length<3) F.recallVal+=k;
+  const slot=$('rcIn');
+  slot.textContent=F.recallVal||'?';
+  slot.classList.toggle('empty', !F.recallVal);
+  $('rcGo').disabled=!F.recallVal;
+  beep(700,.03,'square',.025);
+}
+function hideRecall(){
+  $('recallPane').hidden=true;
+  $('gridPane').hidden=false;
+  F.recall=false;
+}
+function submitRecall(a,b){
+  if(!F||!F.recall) return;
+  const given=parseInt(F.recallVal,10);
+  const ms=performance.now()-F.t0;
+  const slot=$('rcIn');
+  F.recalls++;
+  if(given===a*b){
+    slot.className='rcSlot num right';
+    $('rcHint').innerHTML='<b style="color:var(--mint)">{יָדַעְתָּ|יָדַעַתְּ} אוֹתוֹ.</b>';
+    $('rcPad').querySelectorAll('button').forEach(x=>x.disabled=true);
+    $('rcGo').disabled=true; $('rcBuild').disabled=true;
+    F.recallHits++;
+    setTimeout(()=>{ if(!F||F.over) return;
+      hideRecall(); $('rcBuild').disabled=false;
+      resolveTurn('recallHit', ms) }, 620);
+  }else{
+    slot.className='rcSlot num wrong';
+    $('rcHint').innerHTML=`לֹא. <b style="color:var(--gold-hi)">${a} × ${b} = ${a*b}</b>. {נִבְנֶה אוֹתוֹ יַחַד|נִבְנֶה אוֹתוֹ יַחַד}.`;
+    $('rcPad').querySelectorAll('button').forEach(x=>x.disabled=true);
+    $('rcGo').disabled=true; $('rcBuild').disabled=true;
+    buzz([28,45,28]); beep(120,.26,'sawtooth',.07,60);
+    logEvent('recallAnswer',{a,b,answer:given,ms});
+    setTimeout(()=>{ if(!F||F.over) return;
+      hideRecall(); $('rcBuild').disabled=false;
+      resolveTurn('recallMiss', ms) }, 1100);
+  }
+}
 function setObjective(a,b,rung){
   const o=$('objective');
   o.innerHTML = rung<2
@@ -1767,7 +2275,8 @@ function objectiveSay(a,b,rung){
 /* middle rung: the outline is drawn and the child only traces it */
 function showTarget(a,b){
   const rows=Math.min(a,ROWS), cols=Math.min(b,COLS);
-  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) cellAt(r,c).classList.add('target');
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const el=cellAt(r,c); if(el) el.classList.add('target') }
   const hand=document.createElement('div'); hand.className='ghosthand';
   $('grid').appendChild(hand);
   const x0=6+G.cell/2, y0=6+G.cell/2;
@@ -1881,7 +2390,34 @@ function gridUp(e){
       $('gridHint').innerHTML=`{אַתָּה סוֹפֵר|אַתְּ סוֹפֶרֶת} אַחַת-אַחַת — זֶה בְּסֵדֶר.
         עוֹד <b style="color:var(--gold-hi)">${left}</b>.`;
   }
-  if(F.have===F.need) setTimeout(()=>resolveTurn(true),320);
+  if(F.have===F.need) setTimeout(()=>finishBuild(),320);
+}
+/* ============================================================
+   DID THE CHILD BUILD THE FACT, OR JUST THE ANSWER?
+   12 squares is not 3 x 4. A 2 x 6 is a correct rectangle for 12 and a
+   perfectly good piece of thinking — but it is evidence about 12, not
+   about "three rows of four", and the model must not confuse them.
+   The pieces count as the asked fact only when, together, they tile
+   exactly an a x b rectangle.
+   ============================================================ */
+function builtStructure(a,b){
+  const ps=F.pieces;
+  if(!ps.length) return 'none';
+  const r0=Math.min(...ps.map(p=>p.r0)), r1=Math.max(...ps.map(p=>p.r1));
+  const c0=Math.min(...ps.map(p=>p.c0)), c1=Math.max(...ps.map(p=>p.c1));
+  const h=r1-r0+1, w=c1-c0+1;
+  const filled=ps.reduce((n,p)=>n+p.area,0);
+  /* gaps or an overhanging piece mean the shape is not the rectangle */
+  if(filled!==h*w) return 'equivalent';
+  const ok=(h===a&&w===b)||(h===b&&w===a);
+  return ok ? 'exact' : 'equivalent';
+}
+function finishBuild(){
+  if(!F||F.over||!F.cur) return;
+  const [a,b]=F.cur;
+  const shape=builtStructure(a,b);
+  if(shape==='equivalent') return resolveTurn('equivalent');
+  resolveTurn(F.helped ? 'assisted' : (F.rung<2 ? 'traced' : 'exact'));
 }
 /* a short, calm confirmation of where the count stands */
 function countEcho(txt){
@@ -1935,7 +2471,7 @@ function undoPiece(){
 function helpMe(){
   if(!F||!F.cur) return;
   const [a,b]=F.cur, sp=splitFor(a,b);
-  F.helped=true; F.how='helped';
+  F.helped=true;
   if(sp){
     const other=sp.other, [p,q]=sp.parts;
     $('gridHint').innerHTML=
@@ -1949,27 +2485,43 @@ function helpMe(){
   toast('הָרֶמֶז לֹא נִסְפָּר כִּידִיעָה');
 }
 
-/* ---------- resolve ---------- */
-function resolveTurn(blocked){
+/* ---------- resolve ----------
+   One typed outcome in, one consequence out. The rules, in one place:
+     exact / traced / assisted -> the blow is blocked, evidence is written
+     equivalent                -> the blow is blocked, NOTHING is claimed
+     recallHit                 -> blocked, and the fact is proven retrievable
+     recallMiss                -> the SHIELD breaks, not the child
+   A child is never damaged for asking for help, for building it a different
+   way, or for being slow. Only a retrieval error costs anything, and it
+   costs the shield. */
+const DMG={ exact:20, traced:16, assisted:10, equivalent:8, recallHit:24, recallMiss:0 };
+function resolveTurn(outcome, msIn){
   if(!F||F.over) return;
+  if(outcome===true) outcome='exact';        /* nothing calls this any more */
   if(F.hand){ F.hand.remove(); F.hand=null }
   $('readyBtn').hidden=true;
   $('incoming').hidden=true; $('incoming').classList.remove('charge');
   const [a,b]=F.cur;
-  const ms=performance.now()-F.t0;
+  const ms = msIn!==undefined ? msIn : (F.t0?performance.now()-F.t0:0);
   const st=$('stage');
-  const how = F.helped ? 'helped' : (F.pieces.length>1 ? 'split' : 'whole');
   const before=lvl(a,b);
+  const blocked = outcome!=='recallMiss';
+
+  record(a,b,outcome,ms);
+  const after=lvl(a,b);
+  if(after>before) F.learned.push({a,b,l:after});
+  if(outcome==='exact') F.exact++;
+  if(outcome==='equivalent') F.equiv++;
+  if(outcome==='assisted') F.helps++;
 
   if(blocked){
-    record(a,b,true,ms,how);
-    const after=lvl(a,b);
-    if(after>before) F.learned.push({a,b,l:after});
     F.blocks++; F.combo++; F.best=Math.max(F.best,F.combo);
-    const base = F.pieces.length>1 ? 14 : 20;
-    const dmg = Math.round(base*(1+Math.min(.4,Math.max(0,F.combo-2)*.1)));
+    const base=DMG[outcome]||14;
+    const dmg=Math.round(base*(1+Math.min(.4,Math.max(0,F.combo-2)*.1)));
     F.hpFoe=Math.max(0,F.hpFoe-dmg);
-    const pts=Math.round(F.need*(F.helped?1:2))*10;
+    /* score rewards the QUALITY of the evidence, not the size of the number.
+       Blocking a 9x8 by tracing an outline is worth less than knowing 3x4. */
+    const pts={exact:120, traced:70, assisted:40, equivalent:35, recallHit:200}[outcome]||50;
     F.score+=pts;
     const sc=$('scoreN'); sc.textContent=F.score.toLocaleString('en-US');
     sc.classList.remove('bump'); void sc.offsetWidth; sc.classList.add('bump');
@@ -1981,19 +2533,41 @@ function resolveTurn(blocked){
       $('hpFoe').style.width=F.hpFoe+'%';
       setTimeout(()=>$('ghFoe').style.width=F.hpFoe+'%',10);
     });
-    bumpRung(a,b);
-    banner(F.pieces.length>1?'{פֵּרַקְתָּ|פֵּרַקְתְּ} אוֹתוֹ!':'{חָסַמְתָּ|חָסַמְתְּ}!');
+    if(outcome==='exact'||outcome==='traced') bumpRung(a,b);
+
+    /* an equivalent build gets its own moment: a real acknowledgement, an
+       honest correction, and the rectangle actually re-forming into the one
+       that was asked for. It is the most interesting thing that can happen
+       in the fight and it used to be silently scored as mastery. */
+    if(outcome==='equivalent'){
+      banner('דֶּרֶךְ אַחֶרֶת!');
+      F.narrating=true;
+      const shapes=F.pieces.map(p=>`${p.w}×${p.h}`).join(' + ');
+      $('gridHint').innerHTML=
+        `${shapes} זֶה בֶּאֱמֶת <b style="color:var(--mint)">${F.need}</b> —
+         אֲבָל הַמַּכָּה הָיְתָה <b style="color:var(--gold-hi)">${a} שׁוּרוֹת שֶׁל ${b}</b>.`;
+      narrate(`מצאת דרך אחרת לבנות ${F.need}. זה נכון ל${F.need}. אבל המכה הייתה ${a} שורות של ${b}. תראה.`,
+        ()=>{ if(!F||F.over) return;
+          regroupInto(a,b,()=>{ if(!F||F.over) return; F.narrating=false;
+            F.last=[a,b]; F.i++;
+            if(F.hpFoe<=0||F.i>=F.total) endFight(); else turn() }) });
+      return;
+    }
+    banner(outcome==='recallHit' ? '{מִזִּכָּרוֹן|מִזִּכָּרוֹן}!'
+         : F.pieces && F.pieces.length>1 ? '{פֵּרַקְתָּ|פֵּרַקְתְּ} אוֹתוֹ!'
+         : '{חָסַמְתָּ|חָסַמְתְּ}!');
     F.narrating=true;
-    narrate(F.pieces.length>1
-      ? `${F.pieces.map(p=>p.area).join(' ועוד ')} זה ${F.need}. ${S.g==='f'?'חסמת':'חסמת'}.`
-      : `${a} כפול ${b} זה ${F.need}.`,
-      ()=>{ if(!F||F.over) return; F.narrating=false;
-        $('answers') && 0;
+    const line = outcome==='recallHit'
+      ? `${a} כפול ${b} זה ${F.need}. בלי לבנות.`
+      : (F.pieces && F.pieces.length>1
+         ? `${F.pieces.map(p=>p.area).join(' ועוד ')} זה ${F.need}. חסמת.`
+         : `${a} כפול ${b} זה ${F.need}.`);
+    narrate(line, ()=>{ if(!F||F.over) return; F.narrating=false;
         if(F.hpFoe<=0||F.i>=F.total) endFight(); else turn() });
   }else{
-    record(a,b,false,ms,how);
+    /* the retrieval was wrong. The shield takes it — the child does not. */
     F.misses++; F.combo=0;
-    F.hpMe=Math.max(0,F.hpMe-16);
+    F.hpMe=Math.max(0,F.hpMe-12);
     punchLand(false, ()=>{
       if(!F||F.over) return;
       st.classList.remove('hit-me'); void st.offsetWidth; st.classList.add('hit-me');
@@ -2001,15 +2575,47 @@ function resolveTurn(blocked){
       fw.classList.add('shake'); setTimeout(()=>fw.classList.remove('shake'),340);
       $('hpMe').style.width=F.hpMe+'%';
       setTimeout(()=>$('ghMe').style.width=F.hpMe+'%',10);
-      banner('{חָטַפְתָּ|חָטַפְתְּ}');
+      banner('הַמָּגֵן נִשְׁבַּר');
     });
     F.last=[a,b]; F.i++;
+    /* the retrieval never built a board, so one has to exist before Morris
+       can build the fact on it */
+    sizeGrid(a,b); buildGrid();
+    $('needN').textContent=F.need; $('haveN').textContent='0'; $('pieces').innerHTML='';
+    F.pieces=[]; F.have=0;
     return setTimeout(()=>teachAfterMiss(a,b),1250);
   }
   F.last=[a,b]; F.i++;
   /* the follow-on is driven by the narration, not by a fixed delay */
   if(!F.narrating) setTimeout(()=>{ if(!F||F.over) return;
     if(F.hpFoe<=0||F.i>=F.total) endFight(); else turn() },1150);
+}
+/* the 2x6 the child drew slides apart and re-lands as 3 rows of 4 — the
+   correction is shown, not asserted */
+function regroupInto(a,b,done){
+  const rows=Math.min(a,ROWS), cols=Math.min(b,COLS);
+  setTimeout(()=>{
+    if(!F||F.over) return done&&done();
+    clearGrid();
+    sizeGrid(a,b); buildGrid();
+    const gen=G&&G.gen;
+    let r=0;
+    const step=()=>{
+      if(!F||F.over||!G||G.gen!==gen) return done&&done();
+      if(r>=rows){
+        $('readout').hidden=false; $('readout').classList.remove('words');
+        $('readout').innerHTML=`${a} × ${b} = <b style="color:var(--mint)">${a*b}</b>`;
+        [523,659,784].forEach((f,i)=>setTimeout(()=>beep(f,.14,'triangle',.05),i*100));
+        return setTimeout(()=>{ clearGrid(); done&&done() },1100);
+      }
+      for(let c=0;c<cols;c++){ const el=cellAt(r,c);
+        el.classList.add('locked','tick','pA') }
+      beep(430+r*22,.07,'square',.04);
+      r++;
+      setTimeout(step,230);
+    };
+    setTimeout(step,220);
+  },260);
 }
 /* ---------- the blow ----------
    He pulls back and STAYS pulled back — there is no clock in this arena,
@@ -2072,41 +2678,109 @@ function teachAfterMiss(a,b){
 function paintTeach(a,b){ countBuild(a,b,'teach') }
 
 /* ---------- end ---------- */
+/* three exercises the game wants to see again TOMORROW — chosen because the
+   evidence for them is thin, not because they were the last ones asked */
+/* The three exercises the NEXT session will genuinely check, and only those.
+   A fact qualifies for one of three honest reasons:
+     - it was retrieved once and the claim now needs a second, later day
+     - it can be built alone and has never been asked without the grid
+     - its spacing interval actually runs out by tomorrow night
+   Anything else would be a promise the game does not intend to keep. */
+function dueTomorrow(){
+  const soon=Date.now()+36*36e5;
+  const out=[];
+  for(let a=1;a<=10;a++) for(let b=1;b<=10;b++){
+    const f=S.facts[fk(a,b)]; if(!f||!f.s) continue;
+    if(!gated(a,b)) continue;
+    const L=lvl(a,b); if(L>=5) continue;
+    const k=kOf(f);
+    let sc=0;
+    if(k.r>=1 && !k.t)      sc=300;   /* one night away from "by heart"     */
+    else if(k.b>=1 && !k.r) sc=200;   /* builds it — ready to be asked cold */
+    else if(f.due<=soon)    sc=100-L*10;
+    if(sc) out.push({a,b,sc});
+  }
+  out.sort((x,y)=>y.sc-x.sc||(x.a*x.b)-(y.a*y.b));
+  return out.slice(0,3);
+}
 function endFight(){
   if(!F||F.over) return;
   F.over=true;
+  $('recallPane').hidden=true; $('gridPane').hidden=false;
+  if(F) F.recall=false;
   const won=F.hpFoe<=0;
   S.score+=F.score; if(F.score>S.best) S.best=F.score;
   S.sessions++;
-  if(won && !F.again){
+  /* THE BELT: a piece is only ever handed over for a story fight that has
+     not already been won. A rematch is a rematch, and says so. */
+  let gotClue=false;
+  if(won){
     S.beat[F.foe.key]=(S.beat[F.foe.key]||0)+1;
-    if(S.clues<FOES.length) S.clues=Math.max(S.clues, FOES.indexOf(F.foe)+1);
+    if(F.story && S.clues===FOES.indexOf(F.foe)){ S.clues++; gotClue=true }
   }
+  logEvent('fightEnd',{foe:F.foe.key, answer:(won?'won':'held'),
+    a:F.blocks, b:F.recallHits, ms:Math.round(F.score)});
   save();
   show('result');
-  $('resTitle').innerHTML = won?'{נִצַּחְתָּ|נִצַּחְתְּ}':'עוֹד סִבּוּב';
+  const champ = gotClue && S.clues>=FOES.length;
+  $('resTitle').innerHTML = champ ? 'הַחֲגוֹרָה שְׁלֵמָה'
+                          : won ? '{נִצַּחְתָּ|נִצַּחְתְּ}' : 'עוֹד סִבּוּב';
   $('resTitle').style.color = won?'var(--gold)':'var(--chalk)';
-  $('resSub').textContent = won
-    ? `{הִפַּלְתָּ|הִפַּלְתְּ} אֶת ${F.foe.name}. {הֶחְזַרְתָּ|הֶחְזַרְתְּ} עוֹד חֲתִיכָה מֵהַחֲגוֹרָה.`
-    : `הוּא עוֹד עוֹמֵד. הַכֹּל נִשְׁמַר — אֶפְשָׁר לְנַסּוֹת שׁוּב מָתַי שֶׁבָּא לְךָ.`;
-  $('resClue').hidden=!won;
-  if(won) $('resClueTxt').textContent=F.foe.clue;
+  $('resSub').innerHTML = !won
+    ? `הוּא עוֹד עוֹמֵד. הַכֹּל נִשְׁמַר — אֶפְשָׁר לְנַסּוֹת שׁוּב מָתַי שֶׁבָּא לְךָ.`
+    : gotClue
+      ? `{הִפַּלְתָּ|הִפַּלְתְּ} אֶת ${F.foe.name}. {הֶחְזַרְתָּ|הֶחְזַרְתְּ} עוֹד חֲתִיכָה מֵהַחֲגוֹרָה — ${S.clues} מִתּוֹךְ 10.`
+      : `{הִפַּלְתָּ|הִפַּלְתְּ} אֶת ${F.foe.name} שׁוּב. הַחֲתִיכָה שֶׁלּוֹ כְּבָר אֶצְלְךָ — זֶה הָיָה אִמּוּן.`;
+  /* a clue is shown only when a clue was actually won */
+  $('resClue').hidden=!gotClue;
+  if(gotClue) $('resClueTxt').textContent=CLUES[S.clues-1]||'';
   $('rsScore').textContent=F.score.toLocaleString('en-US');
   $('rsBlocks').textContent=F.blocks;
   $('rsCombo').textContent=F.best;
+
+  /* what improved, said in the words of the evidence that produced it */
   const rows=$('resLearnedRows');
-  $('resLearned').hidden=!F.learned.length;
-  rows.innerHTML=F.learned.slice(0,6).map(x=>{
-    const t=x.l>=5?'{יוֹדֵעַ|יוֹדַעַת} בְּעַל פֶּה':x.l>=3?'{מֵבִין וּבוֹנֶה|מְבִינָה וּבוֹנָה} לְבַד':'{מַתְחִיל|מַתְחִילָה} לָדַעַת';
-    const c=x.l>=5?'var(--mint)':x.l>=3?'var(--blue-hi)':'var(--chalk-2)';
+  /* a fact that climbed twice in one fight is one fact, shown at where it
+     landed — not two lines that look like two different achievements */
+  const best={};
+  F.learned.forEach(x=>{ const k=fk(x.a,x.b);
+    if(!best[k]||best[k].l<x.l) best[k]=x });
+  const learned=Object.values(best).sort((x,y)=>y.l-x.l);
+  $('resLearned').hidden=!learned.length;
+  rows.innerHTML=learned.slice(0,6).map(x=>{
+    const t=LEVEL_WORD[x.l]||LEVEL_WORD[1];
+    const c=x.l>=5?'var(--mint)':x.l>=4?'var(--mint)':x.l>=3?'var(--blue-hi)':'var(--chalk-2)';
     return `<div class="lrow"><span class="f">${x.a} × ${x.b} = ${x.a*x.b}</span>
       <span class="t" style="color:${c}">${t}</span></div>`}).join('');
+
+  /* THE REASON TO COME BACK. Not a streak — a specific, named promise that
+     the game will check tomorrow whether these three actually stayed. */
+  const soon=dueTomorrow();
+  const box=$('resTomorrow');
+  if(soon.length){
+    box.hidden=false;
+    $('resTomorrowRows').innerHTML=soon.map(x=>
+      `<span class="tmr num">${x.a} × ${x.b}</span>`).join('');
+    $('resTomorrowSay').textContent = soon.length===1
+      ? 'תַּרְגִּיל אֶחָד עוֹד לֹא יוֹשֵׁב. אֲנִי רוֹצֶה לִרְאוֹת אִם הוּא נִשְׁאַר אֶצְלְךָ גַּם מָחָר.'
+      : `${soon.length} תַּרְגִּילִים עוֹד לֹא יוֹשְׁבִים. אֲנִי רוֹצֶה לִרְאוֹת אִם הֵם נִשְׁאֲרוּ אֶצְלְךָ גַּם מָחָר.`;
+  } else box.hidden=true;
+
   if(won){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.16,'triangle',.06),i*110));
     buzz([30,60,30,60,90]);
     const fl=document.createElement('div'); fl.className='koflash';
     document.body.appendChild(fl); setTimeout(()=>fl.remove(),800);
   } else beep(160,.4,'sawtooth',.06,90);
 }
+/* the only four things the game is ever allowed to say about a fact */
+const LEVEL_WORD={
+  0:'עוֹד לֹא נִבְדַּק',
+  1:'{רָאָה|רָאֲתָה} אוֹתוֹ נִבְנֶה',
+  2:'{בּוֹנֶה|בּוֹנָה} אוֹתוֹ עִם סִימָן',
+  3:'{בּוֹנֶה|בּוֹנָה} אוֹתוֹ לְבַד',
+  4:'{שָׁלַף|שָׁלְפָה} בְּלִי רֶשֶׁת',
+  5:'{נִשְׁאַר|נִשְׁאֲרָה} גַּם אַחֲרֵי לַיְלָה'
+};
 
 /* ============================================================
    HOME — one screen, one button
@@ -2118,28 +2792,94 @@ function show(id){
 }
 function goHome(){
   show('home');
-  const foe=nextFoe(), t=openTier();
+  markDay();
+  /* the story stands on its own floor; the maths stands on its own tier.
+     The home screen shows the story, because the story is what the child
+     is here for — and offers training when the two have drifted apart. */
+  const finished=(S.clues||0)>=FOES.length;
+  const open=storyOpen();
+  if(HOME_MODE==='training' && open) HOME_MODE='story';
+  if(!open) HOME_MODE='training';
+  /* once the belt is whole the champion stays on the screen — the story has
+     an ending, and the ending is allowed to be visible */
+  const foe = finished ? FOES[FOES.length-1]
+            : HOME_MODE==='story' ? storyFoe() : trainFoe();
+  F=null;
   $('hsMe').src=meArt(); $('hsFoe').src=ART[foe.key]||ART.champ;
   $('hsCoach').src=ART.coach;
   $('hsFoe').classList.toggle('known', !!S.beat[foe.key]);
   $('hsName').textContent=foe.name;
   $('hsPower').textContent=foe.power;
-  $('hsFloor').textContent='קוֹמָה '+(t+1)+' מִתּוֹךְ 10';
+  /* the child never loses their place in the building: training says which
+     floor it is training FOR, it does not replace the floor with nothing */
+  const done = (S.clues||0)>=FOES.length;
+  $('hsFloor').textContent = done ? 'הַבִּנְיָן כֻּלּוֹ — 10 מִתּוֹךְ 10'
+    : HOME_MODE==='story' ? 'קוֹמָה '+floorNo()+' מִתּוֹךְ '+FOES.length
+    : 'אִמּוּן לִקְרַאת קוֹמָה '+floorNo();
   const bits=$('beltBits'); bits.innerHTML='';
-  for(let i=0;i<10;i++){ const e=document.createElement('i');
+  for(let i=0;i<FOES.length;i++){ const e=document.createElement('i');
     if(i<S.clues) e.className='got'; bits.appendChild(e) }
-  const mem=memorised(), und=understood();
-  /* the coach talks to the child — never the parent-view wording */
-  $('hsSay').innerHTML = S.sessions===0
+
+  /* the mode bar only appears when there is a real choice to make */
+  const bar=$('hsMode');
+  bar.hidden = !open || S.sessions<2;
+  $('hsStory').classList.toggle('on', HOME_MODE==='story');
+  $('hsTrain').classList.toggle('on', HOME_MODE==='training');
+
+  /* WHY COME BACK: the count of things whose memory is actually being
+     tested right now, and the count waiting for a later day */
+  const now=readyNow(), later=waitingForLater();
+  const due=$('hsDue');
+  if(now||later){
+    due.hidden=false;
+    due.innerHTML = now
+      ? `<b>${now}</b> ${now===1?'תַּרְגִּיל מְחַכֶּה לְרִימָאץ׳':'תַּרְגִּילִים מְחַכִּים לְרִימָאץ׳'} עַכְשָׁו.`
+        + (later?` עוֹד ${later} יְחַכּוּ לְיוֹם אַחֵר.`:'')
+      : `הַכֹּל טָרִי. <b>${later}</b> ${later===1?'תַּרְגִּיל חוֹזֵר':'תַּרְגִּילִים חוֹזְרִים'} בַּיָּמִים הַקְּרוֹבִים.`;
+  } else due.hidden=true;
+
+  const mem=memorised();
+  $('hsSay').innerHTML = finished
+    ? `הַחֲגוֹרָה שְׁלֵמָה. עֲשָׂרָה לוֹחֲמִים, עֲשָׂרָה רְמָזִים — {וְאַתָּה יוֹדֵעַ|וְאַתְּ יוֹדַעַת} עַכְשָׁו מִי שָׁבַר אוֹתָהּ. אֶפְשָׁר לְהִלָּחֵם בְּכָל אֶחָד מֵהֶם שׁוּב.`
+    : S.sessions===0
     ? 'כָּל דָּבָר חָדָשׁ — אֲנִי בּוֹנֶה אוֹתוֹ קֹדֶם, {וְאַתָּה מִסְתַּכֵּל|וְאַתְּ מִסְתַּכֶּלֶת}. {בּוֹא|בּוֹאִי}.'
-    : (mem>0
-       ? `${mem} תַּרְגִּילִים כְּבָר יוֹשְׁבִים לְךָ בְּעַל פֶּה. עַכְשָׁו ${foe.name}.`
-       : `עַכְשָׁו ${foe.name}. ${foe.power}.`);
+    : (!open
+       ? `${foe.name} עוֹד לֹא בְּהֶשֵּׂג יָד. נִתְאַמֵּן — וְהַקּוֹמָה תִּפָּתַח.`
+       : mem>0
+         ? `${mem} ${mem===1?'תַּרְגִּיל נִשְׁאַר לְךָ גַּם אַחֲרֵי לַיְלָה':'תַּרְגִּילִים נִשְׁאֲרוּ לְךָ גַּם אַחֲרֵי לַיְלָה'}. עַכְשָׁו ${foe.name}.`
+         : `עַכְשָׁו ${foe.name}. ${foe.power}.`);
   save();
 }
-$('goFight').onclick=()=>{ ac(); startFight(nextFoe()) };
+/* facts whose spacing interval has actually elapsed — the scheduler, honoured */
+function readyNow(){
+  let n=0;
+  for(let a=1;a<=10;a++) for(let b=1;b<=10;b++){
+    const f=S.facts[fk(a,b)];
+    if(!f||!f.s||!gated(a,b)) continue;
+    if(lvl(a,b)>=5) continue;
+    if(!f.due||Date.now()>=f.due) n++;
+  }
+  return n;
+}
+function waitingForLater(){
+  let n=0;
+  for(let a=1;a<=10;a++) for(let b=1;b<=10;b++){
+    const f=S.facts[fk(a,b)];
+    if(!f||!f.s||!gated(a,b)) continue;
+    if(lvl(a,b)>=5) continue;
+    if(f.due && Date.now()<f.due) n++;
+  }
+  return n;
+}
+let HOME_MODE='story';
+$('goFight').onclick=()=>{ ac();
+  const foe = (HOME_MODE==='story'&&storyOpen()) ? storyFoe() : trainFoe();
+  startFight(foe, (HOME_MODE==='story'&&storyOpen())?'story':'training') };
+$('hsStory').onclick=()=>{ ac(); HOME_MODE='story'; goHome() };
+$('hsTrain').onclick=()=>{ ac(); HOME_MODE='training'; goHome() };
 $('resGo').onclick=()=>goHome();
-$('resAgain').onclick=()=>{ if(F&&F.foe) startFight(F.foe,true) };
+/* a rematch is always training — it can never hand out a piece of the belt */
+$('resAgain').onclick=()=>{ const f=F&&F.foe; if(f) startFight(f,'training') };
 
 /* drawer */
 $('menuBtn').onclick=()=>{
@@ -2159,7 +2899,7 @@ $('menuBtn').onclick=()=>{
     <button class="drow" id="mParent"><span class="di">&#9649;</span>
       <div><b>מַבָּט הוֹרֶה</b><small>מה הוא באמת יודע, ומה חסר</small></div></button>
     <button class="drow" id="mStory"><span class="di">&#9635;</span>
-      <div><b>הַסִּפּוּר עַד עַכְשָׁו</b><small>${S.clues} רְמָזִים מִתּוֹךְ 10</small></div></button>
+      <div><b>הַסִּפּוּר עַד עַכְשָׁו</b><small>${S.clues} רְמָזִים מִתּוֹךְ ${FOES.length}</small></div></button>
     <button class="drow" id="mIntro"><span class="di">&#8635;</span>
       <div><b>לִרְאוֹת שׁוּב אֵיךְ מַתְחִילִים</b><small>הַמַּחְסָן וְהַסִּפּוּר מֵהַהַתְחָלָה</small></div></button>
     <button class="drow" id="mWho"><span class="di">&#9787;</span>
@@ -2186,9 +2926,9 @@ $('menuBtn').onclick=()=>{
            הַחֲגוֹרָה שֶׁל הָאַלּוּף נִשְׁבְּרָה לְעֶשֶׂר חֲתִיכוֹת.
            כָּל לוֹחֵם בַּבִּנְיָן שׁוֹמֵר עַל אַחַת.
            <b>כָּל חֲתִיכָה שֶׁתַּחֲזִיר תַּגִּיד לְךָ מַשֶּׁהוּ.</b></p>`
-        : FOES.slice(0,S.clues).map((f,i)=>
+        : CLUES.slice(0,S.clues).map((c,i)=>
            `<div class="drow" style="cursor:default"><span class="di">${i+1}</span>
-            <div><b>${f.name}</b><small>${f.clue}</small></div></div>`).join(''))+
+            <div><b>${FOES[i]?FOES[i].name:''}</b><small>${c}</small></div></div>`).join(''))+
       `<button class="btn ghost" id="mClose2" style="margin-top:10px">סְגֹר</button>`;
     $('mClose2').onclick=()=>d.classList.remove('on');
   };
@@ -2252,6 +2992,10 @@ function leaveFight(){
   nstop();
   $('demo').hidden=true; $('demoCtl').hidden=true;
   $('readyBtn').hidden=true; $('incoming').hidden=true;
+  /* a retrieval left half-answered is not an answer — it is logged as
+     abandoned, and it never reaches the model as a wrong answer */
+  if(F && F.recall) logEvent('recallAbandoned',{a:F.cur&&F.cur[0], b:F.cur&&F.cur[1]});
+  $('recallPane').hidden=true; $('gridPane').hidden=false;
   $('gridPane').style.opacity='1';
   if(F && F.blocks) { S.sessions++; S.score+=F.score }
   save(); F=null;
@@ -2269,48 +3013,121 @@ function openParent(){
     m.insertAdjacentHTML('beforeend',`<div class="h">${r}</div>`);
     for(let c=1;c<=10;c++){
       const L=lvl(r,c); const f=S.facts[fk(r,c)];
-      const cls = L>=5?'l5':L>=4?'l4':L>=3?'l3':(f&&f.w>f.c)?'l2':L>=1?'l1':'';
-      m.insertAdjacentHTML('beforeend',`<div class="c ${cls}" title="${r}×${c}"></div>`);
+      const cls = L>=5?'l5':L>=4?'l4':L>=3?'l3':(f&&f.rw>f.rs)?'l2':L>=1?'l1':'';
+      m.insertAdjacentHTML('beforeend',
+        `<div class="c ${cls}" title="${r}×${c} — ${(LEVEL_WORD[L]||'').replace(/\{([^|]*)\|[^}]*\}/g,'$1')}"></div>`);
     }
   }
-  let ms=0,n=0;
-  for(const k in S.facts){const f=S.facts[k]; const v=medianMs(f); if(v){ms+=v;n++}}
-  const acc=(S.totC+S.totW)?Math.round(S.totC/(S.totC+S.totW)*100):0;
-  const tested=Object.values(S.facts).filter(f=>f.s>0).length;
+  /* ---- the four layers, each said in the words of what proved it ----
+     Nothing here is a proxy. "By heart" means a retrieval that survived a
+     night; it is not inferred from being quick on a grid. */
+  const concept=countLayer('concept'), build=countLayer('build'),
+        recall=countLayer('recall'),  reten=countLayer('retention');
+  /* accuracy exists only where an error was actually possible */
+  let rs=0, rw=0, rms=0, rn=0;
+  for(const k in S.facts){ const f=S.facts[k];
+    rs+=f.rs||0; rw+=f.rw||0;
+    const v=recallMs(f); if(v){rms+=v;rn++} }
+  const tried=rs+rw;
+  const acc = tried ? Math.round(rs/tried*100) : null;
   $('pStats').innerHTML=[
-    ['יודע בעל פה', memorised()+' / 100'],
-    ['מבין ובונה לבד', understood()+' / 100'],
-    ['נבדקו בפועל', tested+' / 100'],
-    ['זמן תגובה חציוני', n?((ms/n)/1000).toFixed(1)+' שנ\'':'—'],
-    ['אחוז נכונות', acc+'%'],
-    ['סיבובים', S.sessions]
-  ].map(([a,b])=>`<div class="prow"><span>${a}</span><b>${b}</b></div>`).join('');
+    ['רָאָה נִבְנֶה', concept+' / 100', 'מוריס בנה את זה מולו'],
+    ['בּוֹנֶה לְבַד', build+' / 100', 'בנה בדיוק את המלבן שנדרש, בלי סימן ובלי עזרה'],
+    ['שׁוֹלֵף בְּלִי רֶשֶׁת', recall+' / 100', 'ענה את התשובה בלי שום רשת על המסך'],
+    ['נִשְׁאַר אַחֲרֵי לַיְלָה', reten+' / 100', 'שלף אותו נכון גם ביום אחר'],
+    ['זְמַן שְׁלִיפָה חֶצְיוֹנִי', rn?((rms/rn)/1000).toFixed(1)+' שנ\'':'—', 'רק שליפות. זמן בנייה על רשת לא נספר כאן'],
+    ['דִּיּוּק בִּשְׁלִיפָה', acc===null?'—':acc+'% ('+rs+'/'+tried+')',
+      acc===null?'עוד לא הייתה שליפה — ולכן אין עדיין אחוז נכונות אמיתי':'רק שאלות בלי רשת. בבנייה אי אפשר לטעות, ולכן היא לא נספרת'],
+    ['סִיבוּבִים', S.sessions, ''],
+    ['יָמִים שֶׁשִּׂחֵק', (S.days||[]).length, 'הזיכרון נמדד על פני ימים, לא על פני חזרות']
+  ].map(([k,v,why])=>`<div class="prow"><span>${k}${why?`<i class="why">${why}</i>`:''}</span><b>${v}</b></div>`).join('');
 
   const open=openTier();
   $('pTiers').innerHTML=TIERS.map((t,i)=>{
     const p=Math.round(tierSolid(i)*100);
     const cls=i<open?'done':i===open?'now':'wait';
+    const foe=FOES[i];
     return `<div class="tier ${cls}"><span class="tn">${t.short.replace('× ','×')}</span>
-      <div style="flex:1"><b>${t.name}</b><small>${t.why}</small>
+      <div style="flex:1"><b>${t.name}</b><small>${t.why} · ${foe?foe.name:''}</small>
       <div class="bar" style="margin-top:6px"><i style="width:${p}%"></i></div></div></div>`;
   }).join('');
 
+  /* ---- what to actually do this week ---- */
   const weak=[];
   for(let a=1;a<=10;a++) for(let b=1;b<=10;b++){
     const f=S.facts[fk(a,b)]; if(!f||!f.s) continue;
-    const err=f.w/f.s, med=medianMs(f), L=lvl(a,b);
-    let why=null, sc=0;
-    if(err>=.34){why=`טועה ${f.w} מתוך ${f.s}`; sc=100+err*100}
-    else if(med>=5000){why=`נכון אבל לאט (${(med/1000).toFixed(1)} שנ')`; sc=60+med/1000}
-    else if(L<3 && f.s>=2){why='עדיין בונה, לא שולף'; sc=40}
-    if(why) weak.push({a,b,why,sc});
+    const k=kOf(f), L=lvl(a,b), med=recallMs(f);
+    let why=null, act=null, sc=0;
+    if(f.rw>0 && f.rw>=f.rs){
+      why=`טועה בשליפה ${f.rw} מתוך ${f.rw+f.rs}`;
+      act='לבנות אותו איתו פעם אחת, ואז לשאול בעל פה'; sc=400+f.rw*10;
+    } else if(f.eq>=2 && k.b===0){
+      why=`מגיע לתשובה, אבל בונה מלבן אחר (${f.eq} פעמים)`;
+      act=`לשאול: "כמה שורות של ${b}?" — הוא יודע את המכפלה, לא את המבנה`; sc=350;
+    } else if(k.r>=1 && !k.t){
+      why='שלף פעם אחת — עוד לא נבדק ביום אחר';
+      act='פשוט לחזור מחר. זה כל מה שחסר'; sc=300;
+    } else if(k.b>=1 && !k.r){
+      why='בונה לבד, אבל עוד לא נשאל בלי רשת';
+      act='לשאול אותו בעל פה, בלי דף'; sc=250;
+    } else if(med>=5000 && k.r>=1){
+      why=`שולף נכון אבל לאט (${(med/1000).toFixed(1)} שנ')`;
+      act='חזרות קצרות ותכופות — לא יותר תרגילים'; sc=200+med/1000;
+    } else if(L<2 && f.s>=3){
+      why='ראה כמה פעמים ועוד לא בנה נכון לבד';
+      act='לבנות אותו יחד לאט, בקוביות או בציור'; sc=150;
+    }
+    if(why) weak.push({a,b,why,act,sc});
   }
   weak.sort((x,y)=>y.sc-x.sc);
+  const top=weak.slice(0,3);
+  $('pDo').innerHTML = top.length
+    ? top.map(x=>`<div class="dorow">
+        <b class="num">${x.a} × ${x.b} = ${x.a*x.b}</b>
+        <span class="dwhy">${x.why}</span>
+        <span class="dact">${x.act}</span></div>`).join('')
+    : `<div class="prow"><span style="font-size:13px;color:var(--faint)">אין עדיין מספיק מדידות כדי להמליץ על משהו מסוים. עוד קרב או שניים.</span></div>`;
+
   $('pWeak').innerHTML = weak.length
     ? weak.slice(0,10).map(x=>`<div class="prow"><b>${x.a} × ${x.b} = ${x.a*x.b}</b>
        <span style="font-size:12.5px;color:var(--faint)">${x.why}</span></div>`).join('')
     : `<div class="prow"><span style="font-size:13px;color:var(--faint)">אין עדיין חור בולט. או שהכל יציב, או שעוד לא נבדק מספיק.</span></div>`;
+
+  const ev=(S.log||[]).length;
+  $('pLogN').textContent = ev ? ev.toLocaleString('en-US') : '0';
 }
+/* ---- the data leaves the device, or it does not really exist ---- */
+$('pCsv').onclick=()=>{
+  if(!(S.log||[]).length) return toast('אין עדיין אירועים לייצא');
+  download(`zirat-log-${today()}.csv`, '﻿'+logCSV(), 'text/csv')
+    ? toast('הקובץ ירד') : toast('הדפדפן חסם את ההורדה');
+};
+$('pBackup').onclick=()=>{
+  download(`zirat-backup-${today()}.json`, JSON.stringify(S), 'application/json')
+    ? toast('גיבוי ירד') : toast('הדפדפן חסם את ההורדה');
+};
+$('pRestore').onclick=()=>$('pFile').click();
+$('pFile').onchange=e=>{
+  const file=e.target.files&&e.target.files[0]; if(!file) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    let d=null;
+    try{ d=JSON.parse(rd.result) }catch(err){ return toast('הקובץ לא תקין') }
+    if(!d||!d.facts) return toast('זה לא קובץ גיבוי של המשחק');
+    askConfirm('לשחזר מגיבוי?',
+      'כל מה שנמדד על המכשיר הזה יוחלף במה שבקובץ.<br><b>אין דרך לבטל.</b>',
+      'כן, לשחזר', true, ()=>{
+        for(let a=1;a<=10;a++) for(let b=1;b<=10;b++){
+          const k=fk(a,b);
+          if(!d.facts[k]) d.facts[k]=blankFact(); else migrateFact(d.facts[k]);
+        }
+        if(!d.log)d.log=[]; if(!d.days)d.days=[]; d.v=3;
+        S=d; save(); toast('שוחזר'); openParent();
+      });
+  };
+  rd.readAsText(file);
+  e.target.value='';
+};
 $('pBack').onclick=()=>goHome();
 /* Browser confirm() is silently blocked inside a sandboxed frame — it returns
    false without ever showing, so the button appeared dead. This asks in-app. */
