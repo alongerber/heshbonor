@@ -1,0 +1,305 @@
+{
+ "num_16_x.mp3": {
+  "file": "num_16_x.mp3"
+ },
+ "fg_pieces_m.mp3": {
+  "file": "fg_pieces_m.mp3"
+ },
+ "num_15_x.mp3": {
+  "file": "num_15_x.mp3"
+ },
+ "fg_hit_m.mp3": {
+  "file": "fg_hit_m.mp3"
+ },
+ "num_9_x.mp3": {
+  "file": "num_9_x.mp3"
+ },
+ "num_30_x.mp3": {
+  "file": "num_30_x.mp3"
+ },
+ "num_27_x.mp3": {
+  "file": "num_27_x.mp3"
+ },
+ "num_4_x.mp3": {
+  "file": "num_4_x.mp3"
+ },
+ "wh_rule_m.mp3": {
+  "file": "wh_rule_m.mp3"
+ },
+ "fg_marked_m.mp3": {
+  "file": "fg_marked_m.mp3"
+ },
+ "foe_0_m.mp3": {
+  "file": "foe_0_m.mp3"
+ },
+ "fg_build_f.mp3": {
+  "file": "fg_build_f.mp3"
+ },
+ "wh_help_m.mp3": {
+  "file": "wh_help_m.mp3"
+ },
+ "wh_help_f.mp3": {
+  "file": "wh_help_f.mp3"
+ },
+ "fg_won_f.mp3": {
+  "file": "fg_won_f.mp3"
+ },
+ "num_72_x.mp3": {
+  "file": "num_72_x.mp3"
+ },
+ "foe_8_m.mp3": {
+  "file": "foe_8_m.mp3"
+ },
+ "fg_buildword_f.mp3": {
+  "file": "fg_buildword_f.mp3"
+ },
+ "num_25_x.mp3": {
+  "file": "num_25_x.mp3"
+ },
+ "fg_watch_m.mp3": {
+  "file": "fg_watch_m.mp3"
+ },
+ "fg_build_m.mp3": {
+  "file": "fg_build_m.mp3"
+ },
+ "num_40_x.mp3": {
+  "file": "num_40_x.mp3"
+ },
+ "st_5_m.mp3": {
+  "file": "st_5_m.mp3"
+ },
+ "num_60_x.mp3": {
+  "file": "num_60_x.mp3"
+ },
+ "num_54_x.mp3": {
+  "file": "num_54_x.mp3"
+ },
+ "fg_countit.mp3": {
+  "file": "fg_countit.mp3"
+ },
+ "fg_rows_m.mp3": {
+  "file": "fg_rows_m.mp3"
+ },
+ "fg_onegroup.mp3": {
+  "file": "fg_onegroup.mp3"
+ },
+ "st_4_f.mp3": {
+  "file": "st_4_f.mp3"
+ },
+ "num_64_x.mp3": {
+  "file": "num_64_x.mp3"
+ },
+ "wh_count_f.mp3": {
+  "file": "wh_count_f.mp3"
+ },
+ "num_14_x.mp3": {
+  "file": "num_14_x.mp3"
+ },
+ "fg_exact_m.mp3": {
+  "file": "fg_exact_m.mp3"
+ },
+ "num_100_x.mp3": {
+  "file": "num_100_x.mp3"
+ },
+ "num_56_x.mp3": {
+  "file": "num_56_x.mp3"
+ },
+ "num_5_x.mp3": {
+  "file": "num_5_x.mp3"
+ },
+ "fg_ready_m.mp3": {
+  "file": "fg_ready_m.mp3"
+ },
+ "foe_4_m.mp3": {
+  "file": "foe_4_m.mp3"
+ },
+ "num_2_x.mp3": {
+  "file": "num_2_x.mp3"
+ },
+ "st_5_f.mp3": {
+  "file": "st_5_f.mp3"
+ },
+ "num_3_x.mp3": {
+  "file": "num_3_x.mp3"
+ },
+ "num_1_x.mp3": {
+  "file": "num_1_x.mp3"
+ },
+ "num_21_x.mp3": {
+  "file": "num_21_x.mp3"
+ },
+ "wh_count_m.mp3": {
+  "file": "wh_count_m.mp3"
+ },
+ "foe_5_m.mp3": {
+  "file": "foe_5_m.mp3"
+ },
+ "num_10_x.mp3": {
+  "file": "num_10_x.mp3"
+ },
+ "fg_lost_m.mp3": {
+  "file": "fg_lost_m.mp3"
+ },
+ "num_50_x.mp3": {
+  "file": "num_50_x.mp3"
+ },
+ "num_63_x.mp3": {
+  "file": "num_63_x.mp3"
+ },
+ "fg_won_m.mp3": {
+  "file": "fg_won_m.mp3"
+ },
+ "num_81_x.mp3": {
+  "file": "num_81_x.mp3"
+ },
+ "fg_newfact_m.mp3": {
+  "file": "fg_newfact_m.mp3"
+ },
+ "wh_full_m.mp3": {
+  "file": "wh_full_m.mp3"
+ },
+ "fg_pick_f.mp3": {
+  "file": "fg_pick_f.mp3"
+ },
+ "num_28_x.mp3": {
+  "file": "num_28_x.mp3"
+ },
+ "fg_buildword_m.mp3": {
+  "file": "fg_buildword_m.mp3"
+ },
+ "fg_paam.mp3": {
+  "file": "fg_paam.mp3"
+ },
+ "num_8_x.mp3": {
+  "file": "num_8_x.mp3"
+ },
+ "num_7_x.mp3": {
+  "file": "num_7_x.mp3"
+ },
+ "num_49_x.mp3": {
+  "file": "num_49_x.mp3"
+ },
+ "foe_1_m.mp3": {
+  "file": "foe_1_m.mp3"
+ },
+ "st_2_m.mp3": {
+  "file": "st_2_m.mp3"
+ },
+ "num_35_x.mp3": {
+  "file": "num_35_x.mp3"
+ },
+ "num_32_x.mp3": {
+  "file": "num_32_x.mp3"
+ },
+ "foe_2_m.mp3": {
+  "file": "foe_2_m.mp3"
+ },
+ "fg_ready_f.mp3": {
+  "file": "fg_ready_f.mp3"
+ },
+ "wh_name_m.mp3": {
+  "file": "wh_name_m.mp3"
+ },
+ "fg_again_m.mp3": {
+  "file": "fg_again_m.mp3"
+ },
+ "foe_9_m.mp3": {
+  "file": "foe_9_m.mp3"
+ },
+ "fg_ze.mp3": {
+  "file": "fg_ze.mp3"
+ },
+ "num_48_x.mp3": {
+  "file": "num_48_x.mp3"
+ },
+ "fg_hit_f.mp3": {
+  "file": "fg_hit_f.mp3"
+ },
+ "foe_3_m.mp3": {
+  "file": "foe_3_m.mp3"
+ },
+ "num_70_x.mp3": {
+  "file": "num_70_x.mp3"
+ },
+ "st_4_m.mp3": {
+  "file": "st_4_m.mp3"
+ },
+ "fg_hello_m.mp3": {
+  "file": "fg_hello_m.mp3"
+ },
+ "fg_pick_m.mp3": {
+  "file": "fg_pick_m.mp3"
+ },
+ "num_18_x.mp3": {
+  "file": "num_18_x.mp3"
+ },
+ "foe_7_m.mp3": {
+  "file": "foe_7_m.mp3"
+ },
+ "st_3_m.mp3": {
+  "file": "st_3_m.mp3"
+ },
+ "wh_intro_m.mp3": {
+  "file": "wh_intro_m.mp3"
+ },
+ "num_45_x.mp3": {
+  "file": "num_45_x.mp3"
+ },
+ "wh_tap_m.mp3": {
+  "file": "wh_tap_m.mp3"
+ },
+ "num_24_x.mp3": {
+  "file": "num_24_x.mp3"
+ },
+ "num_12_x.mp3": {
+  "file": "num_12_x.mp3"
+ },
+ "fg_times_m.mp3": {
+  "file": "fg_times_m.mp3"
+ },
+ "fg_squares.mp3": {
+  "file": "fg_squares.mp3"
+ },
+ "num_80_x.mp3": {
+  "file": "num_80_x.mp3"
+ },
+ "num_6_x.mp3": {
+  "file": "num_6_x.mp3"
+ },
+ "st_1_m.mp3": {
+  "file": "st_1_m.mp3"
+ },
+ "wh_tap_f.mp3": {
+  "file": "wh_tap_f.mp3"
+ },
+ "fg_blocked_f.mp3": {
+  "file": "fg_blocked_f.mp3"
+ },
+ "num_90_x.mp3": {
+  "file": "num_90_x.mp3"
+ },
+ "fg_split_m.mp3": {
+  "file": "fg_split_m.mp3"
+ },
+ "fg_blocked_m.mp3": {
+  "file": "fg_blocked_m.mp3"
+ },
+ "fg_equals_m.mp3": {
+  "file": "fg_equals_m.mp3"
+ },
+ "foe_6_m.mp3": {
+  "file": "foe_6_m.mp3"
+ },
+ "num_42_x.mp3": {
+  "file": "num_42_x.mp3"
+ },
+ "fg_plus_m.mp3": {
+  "file": "fg_plus_m.mp3"
+ },
+ "num_20_x.mp3": {
+  "file": "num_20_x.mp3"
+ },
+ "num_36_x.mp3": {
+  "file": "num_36_x.mp3"
+ }
+}
