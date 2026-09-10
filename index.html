@@ -926,7 +926,7 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
    is current, and if it is holding an older one it throws away its
    caches and reloads itself — once, guarded, never in a loop.
    ============================================================ */
-const BUILD_ID='2026-09-10 09:20';
+const BUILD_ID='2026-09-10 11:30';
 (async function checkBuild(){
   if(!location.protocol.startsWith('http')) return;   /* a local file has no server to ask */
   try{
@@ -1049,8 +1049,23 @@ const VOICE=(function(){
   return {on, resolve, play, stop, warm, norm};
 })();
 
-/* browsers only allow sound after the child has touched the screen */
-addEventListener('pointerdown', ()=>VOICE.warm(), {once:true});
+/* ============================================================
+   NOTHING SOUNDS UNTIL THE CHILD TOUCHES THE SCREEN
+   Browsers refuse to start an AudioContext or to vibrate before a real
+   gesture, and every attempt logs a warning. This game narrates and beeps
+   on timers, so a cold load fired sixteen of them before the child had
+   done anything — and those sounds were lost regardless. So the audio
+   layer stays shut until the first touch, and opens once when it comes.
+   ============================================================ */
+let GESTURED=false;
+function unlockAudio(){
+  if(GESTURED) return;
+  GESTURED=true;
+  try{ ac() }catch(e){}
+  try{ VOICE.warm() }catch(e){}
+}
+['pointerdown','touchstart','keydown','click'].forEach(ev=>
+  addEventListener(ev, unlockAudio, {once:true, passive:true}));
 /* ============================================================
    ZIRAT HAKEFEL v2 — engine
    ============================================================ */
@@ -1127,8 +1142,14 @@ const HE = {
 
 /* ---------- sound ---------- */
 let AC=null;
-function ac(){ if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
-  if(AC&&AC.state==='suspended')AC.resume(); return AC }
+function ac(){
+  /* before the first gesture the browser will not let this start, so do
+     not ask — asking is what produced the console noise */
+  if(!GESTURED) return null;
+  if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(AC&&AC.state==='suspended'){ try{ AC.resume() }catch(e){} }
+  return AC;
+}
 function beep(f,d,type,vol,to){
   if(!S||!S.sound) return; const c=ac(); if(!c) return;
   const o=c.createOscillator(),g=c.createGain();
@@ -1146,7 +1167,8 @@ function thud(){ if(!S||!S.sound)return; const c=ac(); if(!c)return;
   const f=c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=430;
   n.connect(f);f.connect(g);g.connect(c.destination);n.start();
 }
-function buzz(p){ if(S&&S.sound&&navigator.vibrate) try{navigator.vibrate(p)}catch(e){} }
+function buzz(p){ if(!GESTURED) return;
+  if(S&&S.sound&&navigator.vibrate) try{navigator.vibrate(p)}catch(e){} }
 let VOICES=[];
 function loadVoices(){ try{VOICES=speechSynthesis.getVoices()||[]}catch(e){} }
 if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices }
@@ -2326,7 +2348,10 @@ function demoFirst(a,b){
   $('fight').classList.add('demoing');
   $('gridPane').style.opacity='.25';
   const line=$('demoLine');
-  line.innerHTML=`תַּרְגִּיל חָדָשׁ: <b>${a} כָּפוּל ${b}</b>.<br>{תִּסְתַּכֵּל|תִּסְתַּכְּלִי} — אֲנִי בּוֹנֶה אוֹתוֹ.`;
+  /* no full stop after the bold sum: in RTL a trailing period after an
+     inline element is laid out on a line of its own, which reads as a
+     stray dot floating under the exercise */
+  line.innerHTML=`תַּרְגִּיל חָדָשׁ: <b>${a} כָּפוּל ${b}</b><br>{תִּסְתַּכֵּל|תִּסְתַּכְּלִי} — אֲנִי בּוֹנֶה אוֹתוֹ.`;
   $('demoCount').textContent='';
   /* the line stays on screen until the sentence has actually been said */
   speakThen(`תרגיל חדש. ${a} כפול ${b}. אני בונה אותו, ואפשר להסתכל.`, ()=>{

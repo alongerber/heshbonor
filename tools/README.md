@@ -2,6 +2,16 @@
 
 Checks that are not part of the game and are never served with it.
 
+## serve.js — a static server that honours Range
+
+Use this rather than `python3 -m http.server` when testing anything that
+touches audio or the service worker. Python's server ignores `Range` and
+always answers 200; a real CDN answers **206 Partial Content**, and the
+206 path is where the service worker's caching went wrong once already —
+under Python's server the bug was invisible.
+
+    node tools/serve.js        # serves the repo root on 8899
+
 ## vres.js — does Morris have a recording for this line?
 
 Morris is recorded line by line. A sentence plays in his own voice only
