@@ -22,9 +22,17 @@ the screen SHOWS do not have to match.
 ## voicetest.js — the standing guard
 
 Plays a full campaign, captures every line the narrator is asked to say,
-and fails below 92% coverage.
+and fails below 92% coverage. Needs playwright, which the game itself does
+not — install it wherever you like and point node at it.
 
+    npm i playwright                     # once, anywhere
     python3 -m http.server 8899 &        # from the repo root
     node tools/voicetest.js
 
-    CHROMIUM_PATH=... GAME_URL=... node tools/voicetest.js   # to override
+    # if playwright or chromium live elsewhere:
+    NODE_PATH=/path/to/node_modules \
+    CHROMIUM_PATH=/path/to/chrome \
+    GAME_URL=http://127.0.0.1:8899/index.html \
+      node tools/voicetest.js
+
+Last run: 1193 utterances over 130 fights, 100% in Morris's own voice.
