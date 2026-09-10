@@ -926,7 +926,7 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
    is current, and if it is holding an older one it throws away its
    caches and reloads itself — once, guarded, never in a loop.
    ============================================================ */
-const BUILD_ID='2026-09-09 14:05';
+const BUILD_ID='2026-09-10 09:20';
 (async function checkBuild(){
   if(!location.protocol.startsWith('http')) return;   /* a local file has no server to ask */
   try{
@@ -1196,11 +1196,22 @@ function sayOne(text, token, done){
   }catch(err){}
 
   if(!('speechSynthesis' in window)) return void setTimeout(finish, Math.max(floor,est)*0.55);
+  /* THE ENGLISH MORRIS.
+     pickVoice() returns nothing when the device has no Hebrew voice
+     installed. Setting u.lang='he-IL' does not save it: with no matching
+     voice the engine falls back to its own default, which on most phones
+     is an English one, and it reads the Hebrew letters as English. That is
+     how Morris "starts speaking English" partway through a session — the
+     moment a line has no recording of its own. An English voice mangling
+     Hebrew is worse than no voice at all, and every line is on the screen
+     anyway, so when there is no Hebrew voice we simply stay quiet. */
+  const v=pickVoice();
+  if(!v) return void setTimeout(finish, Math.max(floor,est)*0.55);
   try{
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(txt);
     u.lang='he-IL'; u.rate=paceRate(); u.pitch=1.06; u.volume=1;
-    const v=pickVoice(); if(v) u.voice=v;
+    u.voice=v;
     u.onend=finish; u.onerror=finish;
     setTimeout(finish, est+3500);
     speechSynthesis.speak(u);
@@ -1869,27 +1880,43 @@ const MODES={
    are read anywhere — a trait is data, not a special case in the engine. */
 const TRAITS={
   twin:  {modes:['build','repair'],            twice:true,
-          say:'הַתְּאוֹמִים זוֹרְקִים כָּל מַכָּה פַּעֲמַיִם.'},
+          say:'הַתְּאוֹמִים זוֹרְקִים כָּל מַכָּה פַּעֲמַיִם.',
+          rec:'התאומים עושים כל דבר פעמיים'},
   /* a board ten wide has no interior tenth column, so the Ten Machine
      rules ROWS — which is what a group of ten actually looks like here */
   tens:  {modes:['build','missing'],           guide:1, axis:'row',
-          say:'הַמְּכוֹנָה סוֹפֶרֶת רַק בַּעֲשָׂרוֹת.'},
+          say:'הַמְּכוֹנָה סוֹפֶרֶת רַק בַּעֲשָׂרוֹת.',
+          rec:'מכונת העשר סופרת רק בעשרות'},
   five:  {modes:['build','missing','repair'],  guide:5, axis:'col',
-          say:'יַד הַפְּלָדָה סוֹפֶרֶת בַּחֲמִישִׁיּוֹת.'},
+          say:'יַד הַפְּלָדָה סוֹפֶרֶת בַּחֲמִישִׁיּוֹת.',
+          rec:'יד הפלדה סופר בחמישיות'},
   dbl:   {modes:['repair','build'],            repairHalf:true,
-          say:'אַרְבַּע זְרוֹעוֹת מַכְפִּילוֹת אֶת מָה שֶׁכְּבָר יֵשׁ.'},
+          say:'אַרְבַּע זְרוֹעוֹת מַכְפִּילוֹת אֶת מָה שֶׁכְּבָר יֵשׁ.',
+          rec:'ארבע זרועות מכפיל ואז מכפיל שוב'},
+  /* his recording says "splits into eight", which is the old, vaguer
+     story. The decomposition he actually embodies is 4 and 4, and Morris
+     has every word of that, so he says the true thing instead. */
   split: {modes:['build'],                     forceSplit:true,
-          say:'הַצְּלָלִים מִתְפַּצְּלִים — הַמָּגֵן צָרִיךְ שְׁתֵּי חֲתִיכוֹת.'},
+          say:'הַצְּלָלִים מִתְפַּצְּלִים — הַמָּגֵן צָרִיךְ שְׁתֵּי חֲתִיכוֹת.',
+          rec:'כפול 4, ועוד פעם כפול 4'},
   extra: {modes:['build','repair'],            extraGroup:true,
-          say:'הַמַּכָּה הַשְּׁלִישִׁית מַגִּיעָה אַחֲרֵי שֶׁחָשַׁבְתָּ שֶׁנִּגְמַר.'},
+          say:'הַמַּכָּה הַשְּׁלִישִׁית מַגִּיעָה אַחֲרֵי שֶׁחָשַׁבְתָּ שֶׁנִּגְמַר.',
+          rec:'שלושת האגרופים מכה שלישית שלא רואים'},
   salvo: {modes:['repair','missing','build'],  salvo:3,
-          say:'שֵׁשׁ הַשְּׁרִירִים לֹא עוֹצְרִים בֵּין מַכָּה לְמַכָּה.'},
+          say:'שֵׁשׁ הַשְּׁרִירִים לֹא עוֹצְרִים בֵּין מַכָּה לְמַכָּה.',
+          rec:'שש השרירים חמש מכות ועוד אחת'},
+  /* the one recording that contradicts the curriculum outright — it says
+     "always one less than ten" while the game teaches 5 and 4. He says the
+     decomposition instead, which he also has, word for word. */
   chain: {modes:['build'],                     forceSplit:true, chained:true,
-          say:'הַזְּנָבוֹת בָּאִים אֶחָד אַחֲרֵי הַשֵּׁנִי.'},
+          say:'הַזְּנָבוֹת בָּאִים אֶחָד אַחֲרֵי הַשֵּׁנִי — חָמֵשׁ, וְאָז עוֹד אַרְבַּע.',
+          rec:'כפול 5, ועוד כפול 4'},
   mask:  {modes:['build','missing','repair'],  shuffle:true, faces:true,
-          say:'בְּכָל מַכָּה הוּא מַחֲלִיף פָּנִים — וְגַם אֶת הַמַּכָּה.'},
+          say:'בְּכָל מַכָּה הוּא מַחֲלִיף פָּנִים — וְגַם אֶת הַמַּכָּה.',
+          rec:'שבע המסכות מחליף פנים בכל מכה'},
   champ: {modes:['build','missing','repair'],  shuffle:true, rotate:true,
-          say:'הוּא מַכִּיר אֶת הַמַּכּוֹת שֶׁל כָּל הָעֲשָׂרָה.'}
+          say:'הוּא מַכִּיר אֶת הַמַּכּוֹת שֶׁל כָּל הָעֲשָׂרָה.',
+          rec:'האלוף הוא יודע הכל'}
 };
 const PLAIN={modes:['build']};
 function traitOf(foe){ return TRAITS[foe&&foe.trait] || PLAIN }
@@ -1975,8 +2002,11 @@ function startFight(foe, mode){
   const intro=F.traitDef && F.traitDef.say;
   if(intro){
     banner(foe.name);
+    /* what Morris SAYS and what the screen SHOWS need not be the same
+       words: he was recorded line by line, so the spoken version is
+       phrased in the vocabulary he actually has */
     setTimeout(()=>{ if(!F||F.over) return;
-      toast(intro); speak(intro.replace(/[֑-ׇ]/g,'')) }, 420);
+      toast(intro); speak(F.traitDef.rec || intro.replace(/[֑-ׇ]/g,'')) }, 420);
     setTimeout(turn, 1500);
   } else setTimeout(turn,500);
 }
@@ -2432,8 +2462,8 @@ function askRepair(a,b){
   showIncoming(F.need, 'תִּקּוּן מָגֵן');
   armRound(()=>{
     speak(T.repairHalf
-      ? `חצי מהמגן כבר עומד. תכפיל אותו.`
-      : `יש חור במגן. תשלים בדיוק ${F.hole.area} חתיכות.`);
+      ? `תבנה מגן של ${F.need} חתיכות. ועוד ${F.hole.area} חתיכות.`
+      : `תבנה מגן של ${F.need} חתיכות. בדיוק ${F.hole.area} חתיכות.`);
   });
 }
 
@@ -2459,7 +2489,8 @@ function askMissing(a,b){
      כַּמָּה שׁוּרוֹת {אַתָּה צָרִיךְ|אַתְּ צְרִיכָה}?`;
   $('gridHint').innerHTML=`{תִּמְשֹׁךְ|תִּמְשְׁכִי} לְמַטָּה בָּעַמּוּדָה הַמְּסֻמֶּנֶת וְ{תִסְפֹּר|תִסְפְּרִי} אֶת הַשּׁוּרוֹת.`;
   showIncoming(F.need, 'מַכָּה שֶׁל');
-  armRound(()=>speak(`המכה היא ${F.need}. כל שורה היא ${b}. כמה שורות?`));
+  /* the screen asks "how many rows?"; Morris says the part he can say */
+  armRound(()=>speak(`תבנה מגן של ${F.need} חתיכות. שורות של ${b}.`));
 }
 
 /* shared: the threat banner, and the "I am ready" gate that starts nothing
@@ -2523,7 +2554,9 @@ function askRecall(a,b){
     askTurn(a,b);
   };
   $('rcGo').onclick=()=>submitRecall(a,b);
-  speak(`${a} כפול ${b}. בלי רשת — מה התשובה?`);
+  /* ending on "shave" is the question — the pane already says there is
+      no grid, and Morris has every word of this one */
+  speak(`${a} כפול ${b} שווה`);
 }
 function buildPad(){
   const pad=$('rcPad'); pad.innerHTML='';
@@ -2967,7 +3000,7 @@ function resolveTurn(outcome, msIn){
       $('gridHint').innerHTML=
         `${shapes} זֶה בֶּאֱמֶת <b style="color:var(--mint)">${F.need}</b> —
          אֲבָל הַמַּכָּה הָיְתָה <b style="color:var(--gold-hi)">${a} שׁוּרוֹת שֶׁל ${b}</b>.`;
-      narrate(`מצאת דרך אחרת לבנות ${F.need}. זה נכון ל${F.need}. אבל המכה הייתה ${a} שורות של ${b}. תראה.`,
+      narrate(`זה ${F.need} בדיוק. תבנה ${a} שורות של ${b}.`,
         ()=>{ if(!F||F.over) return;
           regroupInto(a,b,()=>{ if(!F||F.over) return; F.narrating=false;
             F.last=[a,b]; F.i++;
@@ -2980,7 +3013,7 @@ function resolveTurn(outcome, msIn){
          : '{חָסַמְתָּ|חָסַמְתְּ}!');
     F.narrating=true;
     const line = outcome==='recallHit'
-      ? `${a} כפול ${b} זה ${F.need}. בלי לבנות.`
+      ? `${a} כפול ${b} זה ${F.need}`
       : (F.pieces && F.pieces.length>1
          ? `${F.pieces.map(p=>p.area).join(' ועוד ')} זה ${F.need}. חסמת.`
          : `${a} כפול ${b} זה ${F.need}.`);
