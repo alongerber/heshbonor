@@ -926,7 +926,7 @@ body{margin:0;background:var(--canvas);color:var(--chalk);font-family:var(--f-bo
    is current, and if it is holding an older one it throws away its
    caches and reloads itself — once, guarded, never in a loop.
    ============================================================ */
-const BUILD_ID='2026-09-10 11:30';
+const BUILD_ID='2026-09-10 15:10';
 (async function checkBuild(){
   if(!location.protocol.startsWith('http')) return;   /* a local file has no server to ask */
   try{
@@ -1021,23 +1021,66 @@ const VOICE=(function(){
     if(!a){ a=cache[file]=new Audio(BASE+file); a.preload='auto' }
     return a;
   }
-  let live=null;
+  /* `live` is whichever clip is sounding right now, and `liveToken` says
+     which narration owns it. Both are needed: without the token, an OLD
+     sequence discovering it has been superseded would call stop() and
+     silence the NEW sequence's clip — which then never reports 'ended',
+     which hangs the narration, which hides every button that waits on it.
+     An abandoned sequence may only ever stop its own audio. */
+  let live=null, liveToken=0, timer=null, timerToken=0;
+  function clearTimer(){ if(timer){ clearTimeout(timer); timer=null } }
   function stop(){
-    if(live){ try{ live.pause(); live.currentTime=0 }catch(e){} live=null }
+    clearTimer();
+    if(live){ try{ live.pause(); live.currentTime=0 }catch(e){} live=null; liveToken=0 }
   }
-  /* clips run one after the other, each waiting for the one before it */
+  function stopMine(token){
+    if(liveToken===token) stop();
+    else if(timerToken===token) clearTimer();
+  }
+  /* ============================================================
+     Clips run one after the other, each waiting for the one before it —
+     and NOTHING waits for ever.
+
+     An <audio> element does not always report back. Lose audio focus to a
+     phone call, lock the screen, stall a decode, and 'ended' simply never
+     fires. The chain then stopped dead, and because half this game's
+     buttons only appear once Morris stops talking, the child was left
+     tapping a screen that had quietly frozen. That is the "sometimes the
+     next button does not respond".
+
+     So every clip is on a clock twice: it has a moment to START playing,
+     and once playing it has its own length plus a beat to FINISH. Miss
+     either and we move on without it. A missed clip costs one word; a
+     hung clip used to cost the whole session.
+     ============================================================ */
+  const START_MS=1500;            /* long enough for a cache hit, not a hang */
   function play(files, token, done){
     let i=0;
     const step=()=>{
-      if(token!==NSEQ) return stop();
-      if(i>=files.length){ live=null; return done&&done() }
+      if(token!==NSEQ) return stopMine(token);
+      clearTimer();
+      if(i>=files.length){
+        if(liveToken===token){ live=null; liveToken=0 }
+        return done&&done();
+      }
       const a=get(files[i++]);
-      live=a;
-      a.onended=()=>setTimeout(step,110);
-      a.onerror=()=>setTimeout(step,60);
+      live=a; liveToken=token;
+      let moved=false;
+      const go=()=>{ if(moved) return; moved=true;
+        if(timerToken===token) clearTimer();
+        setTimeout(step,110) };
+      a.onended=go;
+      a.onerror=go;
+      /* once it is genuinely playing, wait for its real length and no more */
+      a.onplaying=()=>{
+        if(timerToken===token) clearTimer();
+        const len=(isFinite(a.duration)&&a.duration>0) ? a.duration*1000 : 1800;
+        timer=setTimeout(go, len+900); timerToken=token;
+      };
+      timer=setTimeout(go, START_MS); timerToken=token;
       try{ a.currentTime=0 }catch(e){}
-      const p=a.play();
-      if(p&&p.catch) p.catch(()=>setTimeout(step,60));
+      const pr=a.play();
+      if(pr&&pr.catch) pr.catch(go);
     };
     step();
   }
@@ -1217,6 +1260,18 @@ function sayOne(text, token, done){
     if(clips && clips.length) return VOICE.play(clips, token, ()=>settle(260));
   }catch(err){}
 
+  /* ============================================================
+     THE ROBOT IS OFF BY DEFAULT.
+     Morris is a recorded actor. The device synthesiser is a different,
+     flat, robotic voice, and switching to it mid-scene is jarring enough
+     that a child notices immediately — it reads as the game breaking.
+     Every line the game speaks in play has a recording, so the fallback
+     is not needed to be understood; a line without one is simply silent,
+     and its text is on the screen regardless. A parent who wants
+     everything read aloud can turn the synthesiser on in the menu.
+     ============================================================ */
+  if(!S.robot) return void setTimeout(finish, Math.max(floor,est)*0.55);
+
   if(!('speechSynthesis' in window)) return void setTimeout(finish, Math.max(floor,est)*0.55);
   /* THE ENGLISH MORRIS.
      pickVoice() returns nothing when the device has no Hebrew voice
@@ -1276,6 +1331,24 @@ function gateHide(){ const g=$('tapGate'); if(g){ g.hidden=true; g.onclick=null 
 /* kept for every existing call site: speak and forget */
 function speak(t){ narrate(t) }
 function speakThen(t, done){ narrate(t, done) }
+/* ============================================================
+   narrate(), but the continuation is GUARANTEED to run.
+
+   A narration is abandoned the moment another one starts, and an
+   abandoned one never calls back. That is right when the new narration is
+   what drives the next thing — and fatal in the three places where the
+   callback IS the next thing: drawing the demo, teaching after a miss,
+   and starting the following round. There, a cut-off sentence left the
+   round half-open with nothing to tap, which is the game "not
+   responding". Each of those now continues even if Morris is interrupted,
+   at most once, and no later than the line could have taken to say.
+   ============================================================ */
+function narrateThen(text, done){
+  let fired=false;
+  const once=()=>{ if(fired) return; fired=true; done&&done() };
+  narrate(text, once);
+  setTimeout(once, Math.min(11000, estMs(String(text||''))+3500));
+}
 
 /* how long a child gets to follow along, tunable by the grown-up */
 const PACE={ slow:{cell:640, row:900, rate:.84}, normal:{cell:380, row:560, rate:.96} };
@@ -1515,7 +1588,7 @@ function blankFact(){
 function blank(){
   const facts={};
   for(let a=1;a<=10;a++) for(let b=1;b<=10;b++) facts[fk(a,b)]=blankFact();
-  return {v:3,name:'',g:'m',onboard:0,pace:'slow',voice:'',facts,beat:{},score:0,best:0,sound:true,tts:true,
+  return {v:3,name:'',g:'m',onboard:0,pace:'slow',voice:'',facts,beat:{},score:0,best:0,sound:true,tts:true,robot:false,
           totC:0,totW:0,sessions:0,clues:0,log:[],days:[],started:Date.now()};
 }
 /* v2 saves knew only l:0..5. It cannot say WHICH evidence produced that
@@ -1548,6 +1621,7 @@ function load(){
       }
       if(!p.g)p.g='m'; if(!p.pace)p.pace='slow'; if(p.voice===undefined)p.voice=''; if(p.onboard===undefined)p.onboard=p.sessions>0?1:0;
       if(!p.log)p.log=[]; if(!p.days)p.days=[]; if(p.clues===undefined)p.clues=0;
+      if(p.robot===undefined)p.robot=false;
       p.v=3;
       return p }}}catch(e){}
   return null;
@@ -1764,15 +1838,19 @@ function openWarehouse(){
     {show:()=>{ setSay(`{תִּלְחַץ|תִּלְחֲצִי} עַל חֲתִיכָה כְּדֵי לָשִׂים אוֹתָהּ בָּאַרְגָּז.`);
        $('whTask').innerHTML=`<b>${PER}</b> חֲתִיכוֹת בְּכָל אַרְגָּז · <b>${CRATES}</b> אַרְגָּזִים`;
        [...$('whCrates').children].forEach((c,i)=>c.classList.toggle('now',i===0)) },
-     text:(S.g==='f'?'תלחצי':'תלחץ')+' על חתיכה כדי לשים אותה בארגז. '+PER+' חתיכות בכל ארגז.'}
+     /* his recording says "arba", not "4" — spelling the number as a digit
+        was enough to miss the clip and hand the line to the robot voice */
+     text:(S.g==='f'?'תלחצי':'תלחץ')+' על חתיכה כדי לשים אותה בארגז. ארבע חתיכות בכל ארגז.'}
   ]);
   $('whNext').hidden=true;
   $('whTask').innerHTML='';
 }
 function setSay(html){ $('whSay').innerHTML=html }
-function whSay(html, done){
+/* what is SHOWN and what is SAID are allowed to differ: the screen keeps
+   its niqqud and its digits, Morris says the words he was recorded saying */
+function whSay(html, done, voice){
   $('whSay').innerHTML=html;
-  narrate(html.replace(/<[^>]+>/g,' '), done);
+  narrate(voice || html.replace(/<[^>]+>/g,' '), done);
 }
 function placeShard(btn){
   if(WH.crate>=CRATES) return;
@@ -1787,7 +1865,8 @@ function placeShard(btn){
     beep(880,.14,'triangle',.05); buzz([14,26,14]);
     WH.crate++; WH.placed=0;
     if(WH.crate<CRATES){
-      whSay(`אַרְגָּז מָלֵא. ${PER} חֲתִיכוֹת.<br>עַכְשָׁו הַבָּא.`);
+      whSay(`אַרְגָּז מָלֵא. ${PER} חֲתִיכוֹת.<br>עַכְשָׁו הַבָּא.`,
+            null, 'ארגז מלא ארבע חתיכות עכשיו הבא');
       [...$('whCrates').children].forEach((c,i)=>c.classList.toggle('now',i===WH.crate));
     } else return whDone();
   }
@@ -1799,24 +1878,29 @@ function whDone(){
   markDemo(CRATES,PER);
   narrateAll([
     {show:()=>setSay(`{סְפֹר|סִפְרִי} אִתִּי: <b>${seq.join(', ')}</b>.`),
-     text:(S.g==='f'?'ספרי':'ספור')+' איתי. '+seq.join(', ')+'.'},
+     text:(S.g==='f'?'ספרי':'ספור')+' איתי. ארבע, שמונה, שתים עשרה.'},
     {show:()=>{
        setSay(`${CRATES} אַרְגָּזִים שֶׁל ${PER} — זֶה <b>${total}</b>.`);
        $('whTask').innerHTML=`<span class="whEq num">${CRATES} × ${PER} = ${total}</span>`;
        [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.15,'triangle',.055),i*110));
        buzz([20,40,20,40,70]);
      },
-     text:CRATES+' ארגזים של '+PER+'. זה '+total+'.'},
+     /* "argazim shel" is not a phrase he has; the sum itself is */
+     text:CRATES+' כפול '+PER+' זה '+total+'.'},
     {show:()=>setSay(`לְזֶה קוֹרְאִים <b>כֶּפֶל</b>. כּוֹתְבִים אוֹתוֹ כָּךְ:`),
-     text:'לזה קוראים כפל. כותבים אותו ככה: '+CRATES+' כפול '+PER+' שווה '+total+'.'}
+     text:'לזה קוראים כפל. כותבים אותו ככה: שלוש כפול ארבע שווה שתים עשרה.'}
   ], ()=>{ $('whNext').hidden=false });
 }
 $('whNext').onclick=()=>{ nstop(); openStory() };
 $('whSkip').onclick=()=>{ nstop(); openStory() };
 
 /* ---------- 2. why any of this is happening ---------- */
+/* `rec` is what Morris says; `t` is what the screen shows. They differ
+   wherever the recording uses a spelling the niqqud text does not — here
+   הייתה against הָיְתָה, which is one letter and a whole robot voice. */
 const STORY=[
-  {img:'emblem', t:'לְאַלּוּף הַזִּירָה הָיְתָה <b>חֲגוֹרָה אַחַת</b>.'},
+  {img:'emblem', t:'לְאַלּוּף הַזִּירָה הָיְתָה <b>חֲגוֹרָה אַחַת</b>.',
+   rec:'לאלוף הזירה הייתה חגורה אחת'},
   {img:'shards', t:'לַיְלָה אֶחָד הִיא <b>נִשְׁבְּרָה לְעֶשֶׂר חֲתִיכוֹת</b>.'},
   {img:'ghost',  t:'עֲשָׂרָה לוֹחֲמִים תָּפְסוּ אוֹתָן.<br>כָּל אֶחָד שׁוֹמֵר עַל חֲתִיכָה אַחַת.'},
   {img:'coach',  t:'מֵהַחֲתִיכוֹת בּוֹנִים <b>מָגֵן</b>.<br>בְּלִי מָגֵן הֵם {יַפִּילוּ אוֹתְךָ|יַפִּילוּ אוֹתָךְ}.'},
@@ -1832,7 +1916,7 @@ function stStep(){
   if(s.img) $('stImg').src=ART[s.img];
   $('stImg').style.animation='none'; void $('stImg').offsetWidth; $('stImg').style.animation='';
   $('stTxt').innerHTML=s.t;
-  speak(s.t.replace(/<[^>]+>/g,' '));
+  speak(s.rec || s.t.replace(/<[^>]+>/g,' '));
   thud(); buzz(18);
   [...$('stDots').children].forEach((d,i)=>d.classList.toggle('on',i<=stI));
   $('stNext').textContent = stI===STORY.length-1 ? 'לַזִּירָה' : 'הַלְאָה';
@@ -2354,7 +2438,7 @@ function demoFirst(a,b){
   line.innerHTML=`תַּרְגִּיל חָדָשׁ: <b>${a} כָּפוּל ${b}</b><br>{תִּסְתַּכֵּל|תִּסְתַּכְּלִי} — אֲנִי בּוֹנֶה אוֹתוֹ.`;
   $('demoCount').textContent='';
   /* the line stays on screen until the sentence has actually been said */
-  speakThen(`תרגיל חדש. ${a} כפול ${b}. אני בונה אותו, ואפשר להסתכל.`, ()=>{
+  narrateThen(`תרגיל חדש. ${a} כפול ${b}. אני בונה אותו, ואפשר להסתכל.`, ()=>{
     if(!F||F.over) return;
     d.hidden=true; $('gridPane').style.opacity='1'; line.innerHTML='';
     paintDemo(a,b);
@@ -2387,12 +2471,15 @@ function countBuild(a,b,mode){
       : `${cols} × ${rows} = <b style="color:var(--mint)">${a*b}</b>`;
     [523,659,784].forEach((f,i)=>setTimeout(()=>beep(f,.14,'triangle',.05),i*110));
     const ctl=$('demoCtl');
-    ctl.hidden=true;
-    /* nothing advances on its own — the child replays it or says they are ready */
+    /* The buttons used to appear only once Morris had finished the
+       sentence — ten seconds of narration during which a child tapping
+       where the button should be got nothing at all. They are here as
+       soon as the shape is built; tapping one stops him mid-word, which
+       is exactly what a child who has already understood wants. */
+    ctl.hidden=false;
     narrate(cut
       ? `${cut} כפול ${rows}, ועוד ${cols-cut} כפול ${rows}. ביחד זה ${a*b}.`
-      : `${a} כפול ${b} שווה ${a*b}.`,
-      ()=>{ ctl.hidden=false });
+      : `${a} כפול ${b} שווה ${a*b}.`);
     $('againBtn').onclick=()=>{ nstop(); ctl.hidden=true; countBuild(a,b,mode) };
     $('gotItBtn').onclick=()=>{
       nstop(); ctl.hidden=true; clearGrid();
@@ -3025,7 +3112,7 @@ function resolveTurn(outcome, msIn){
       $('gridHint').innerHTML=
         `${shapes} זֶה בֶּאֱמֶת <b style="color:var(--mint)">${F.need}</b> —
          אֲבָל הַמַּכָּה הָיְתָה <b style="color:var(--gold-hi)">${a} שׁוּרוֹת שֶׁל ${b}</b>.`;
-      narrate(`זה ${F.need} בדיוק. תבנה ${a} שורות של ${b}.`,
+      narrateThen(`זה ${F.need} בדיוק. תבנה ${a} שורות של ${b}.`,
         ()=>{ if(!F||F.over) return;
           regroupInto(a,b,()=>{ if(!F||F.over) return; F.narrating=false;
             F.last=[a,b]; F.i++;
@@ -3042,7 +3129,7 @@ function resolveTurn(outcome, msIn){
       : (F.pieces && F.pieces.length>1
          ? `${F.pieces.map(p=>p.area).join(' ועוד ')} זה ${F.need}. חסמת.`
          : `${a} כפול ${b} זה ${F.need}.`);
-    narrate(line, ()=>{ if(!F||F.over) return; F.narrating=false;
+    narrateThen(line, ()=>{ if(!F||F.over) return; F.narrating=false;
         fireCounter(()=>{ if(!F||F.over) return;
           if(F.hpFoe<=0||F.i>=F.total) endFight(); else turn() }) });
   }else{
@@ -3250,7 +3337,7 @@ function teachAfterMiss(a,b){
     ? `<b>${a} × ${b}</b><br>${sp.say}`
     : `<b>${a} × ${b}</b><br>{נִסְפֹּר|נִסְפֹּר} אוֹתוֹ יַחַד.`;
   $('demoCount').textContent='';
-  speakThen(`${a} כפול ${b}. ` + (sp?sp.say:'נספור אותו יחד.'), ()=>{
+  narrateThen(`${a} כפול ${b}. ` + (sp?sp.say:'נספור אותו יחד.'), ()=>{
     if(!F||F.over) return;
     d.hidden=true; $('gridPane').style.opacity='1'; $('demoLine').innerHTML='';
     paintTeach(a,b);
@@ -3471,6 +3558,8 @@ $('menuBtn').onclick=()=>{
       <div><b>צְלִילִים</b><small>${S.sound?'דּוֹלְקִים':'כְּבוּיִים'}</small></div></button>
     <button class="drow" id="mTts"><span class="di">&#128266;</span>
       <div><b>הַקְרָאָה בְּקוֹל</b><small>${S.tts?'דּוֹלֶקֶת':'כְּבוּיָה'}</small></div></button>
+    <button class="drow" id="mRobot"><span class="di">&#129302;</span>
+      <div><b>קוֹל מְכוֹנָה לְמָה שֶׁמּוֹרִיס לֹא הִקְלִיט</b><small>${S.robot?'דּוֹלֵק — מַשְׁלִים בְּקוֹל רוֹבּוֹטִי':'כָּבוּי — מָה שֶׁאֵין לוֹ הַקְלָטָה פָּשׁוּט לֹא נֶאֱמָר'}</small></div></button>
     <button class="drow" id="mVoice"><span class="di">&#127908;</span>
       <div><b>הַקּוֹל שֶׁל מוֹרִיס</b><small>${(()=>{const l=heVoices();
         if(!l.length) return 'אֵין קוֹל עִבְרִי בַּמַּכְשִׁיר';
@@ -3494,6 +3583,7 @@ $('menuBtn').onclick=()=>{
   $('mClose').onclick=()=>d.classList.remove('on');
   $('mSound').onclick=()=>{S.sound=!S.sound;save();$('menuBtn').click()};
   $('mTts').onclick=()=>{S.tts=!S.tts;save();$('menuBtn').click()};
+  $('mRobot').onclick=()=>{S.robot=!S.robot;save();$('menuBtn').click()};
   $('mPace').onclick=()=>{S.pace=(S.pace==='slow'?'normal':'slow');save();$('menuBtn').click()};
   $('mVoice').onclick=()=>openVoicePicker();
   $('mIntro').onclick=()=>{ closeDrawer(); replayIntro() };

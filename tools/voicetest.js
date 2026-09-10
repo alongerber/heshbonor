@@ -17,13 +17,29 @@ const MIN_COVERAGE = 92;            // % of utterances in Morris's own voice
       static now(){ return RealNow()+skew } };
     const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     S=blank(); S.name='דני'; S.onboard=1; S.tts=true; S.sound=false; save();
-    const SAID=new Map();
+    const SAID=new Map(), ROBOT=[];
     window.sayOne=(text,token,done)=>{
       const txt=gx(String(text||'')).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
       if(txt){ let c=null; try{ c=VOICE.resolve(txt) }catch(e){}
-        const r=SAID.get(txt)||{n:0,covered:!!(c&&c.length)}; r.n++; SAID.set(txt,r) }
+        const ok=!!(c&&c.length);
+        if(!ok) ROBOT.push(txt);
+        const r=SAID.get(txt)||{n:0,covered:ok}; r.n++; SAID.set(txt,r) }
       NBUSY=false; setTimeout(()=>done&&done(),0);
     };
+    /* ---- the opening, tapped through the way a child does ---- */
+    const tap=async(fn)=>{ try{ fn() }catch(e){} await sleep(420) };
+    await tap(()=>{ const b=document.querySelector('#title .btn,#title button'); b&&b.click() });
+    await tap(()=>{ $('pkBoy').parentElement.click(); $('pkGo').click() });
+    await tap(()=>{ $('fname').value='דני';
+      const g=document.querySelector('#name button.primary'); g&&g.click() });
+    for(let i=0;i<12;i++) await tap(()=>{
+      const sh=document.querySelector('#whPile .shard:not(.gone)'); sh&&sh.click() });
+    await sleep(1200);
+    await tap(()=>{ const n=$('whNext'); n&&n.click() });
+    for(let i=0;i<6;i++) await tap(()=>{ const n=$('stNext'); n&&n.click() });
+    const introRobot=[...ROBOT];
+    S.onboard=1; save();
+
     HOME_MODE='story';
     let fights=0;
     while(S.clues<FOES.length && fights<130){
@@ -76,12 +92,15 @@ const MIN_COVERAGE = 92;            // % of utterances in Morris's own voice
     const lines=[...SAID.entries()].map(([t,r])=>({t,n:r.n,covered:r.covered}));
     const spoken=lines.reduce((s,l)=>s+l.n,0);
     const covered=lines.filter(l=>l.covered).reduce((s,l)=>s+l.n,0);
-    return {fights, clues:S.clues, spoken, covered,
+    return {fights, clues:S.clues, spoken, covered, introRobot,
       pct: Math.round(100*covered/spoken),
       misses: lines.filter(l=>!l.covered).sort((x,y)=>y.n-x.n).slice(0,15)};
   });
   console.log(`campaign: ${out.fights} fights, ${out.clues}/10 clues`);
   console.log(`utterances: ${out.spoken} | in Morris's own voice: ${out.covered} (${out.pct}%)`);
+  if(out.introRobot && out.introRobot.length)
+    console.log('\nonboarding lines with no recording:',
+      [...new Set(out.introRobot)].length);
   if(out.misses.length){
     console.log('\nstill falling through to the device voice:');
     out.misses.forEach(l=>console.log(String(l.n).padStart(4),'x ',l.t.slice(0,74)));

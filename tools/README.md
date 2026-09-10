@@ -29,6 +29,14 @@ A MISS is not fatal — it means that line will be silent on a phone with no
 Hebrew voice. Prefer rephrasing it into words he has. What he SAYS and what
 the screen SHOWS do not have to match.
 
+## sweep.js — every line, every a x b, both genders
+
+Enumerates every sentence the game can produce and checks each against the
+recordings. Fast, offline, exhaustive. It mirrors the strings by hand, so
+change it when you change a line Morris says.
+
+    node tools/sweep.js
+
 ## voicetest.js — the standing guard
 
 Plays a full campaign, captures every line the narrator is asked to say,
